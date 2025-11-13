@@ -26,14 +26,15 @@
 
 ### Backend
 - **Python 3.12**: ภาษาหลักในการพัฒนา
-- **Framework**: Flask หรือ FastAPI (เลือกตามความเหมาะสม - เน้นความเรียบง่าย)
+- **Framework**: FastAPI - modern, fast, async web framework
 - **BigQuery**: Database หลักสำหรับเก็บข้อมูลสาขา
 - **Google Cloud Storage (GCS)**: เก็บไฟล์เอกสาร
+- **Uvicorn**: ASGI server สำหรับ production
 
 ### Frontend
 - **HTML5/CSS3**: โครงสร้างและการออกแบบ
-- **Vanilla JavaScript**: เพิ่มความเป็น dynamic (หรือใช้ minimal framework)
-- **Responsive CSS Framework**: Bootstrap หรือเขียนเอง (minimal)
+- **Vanilla JavaScript**: เพิ่มความเป็น dynamic
+- **Tailwind CSS**: Utility-first CSS framework สำหรับ responsive design
 
 ### Infrastructure
 - **Google Cloud Run**: สำหรับ deployment
@@ -94,7 +95,8 @@ retail-branch-demo/
 │           └── scm.html
 ├── static/
 │   ├── css/
-│   │   └── style.css
+│   │   ├── input.css            # Tailwind input
+│   │   └── output.css           # Tailwind compiled output
 │   └── js/
 │       └── app.js
 ├── tests/
@@ -102,6 +104,8 @@ retail-branch-demo/
 │   └── test_services.py
 ├── Dockerfile
 ├── requirements.txt
+├── package.json                # Node.js for Tailwind CSS
+├── tailwind.config.js          # Tailwind configuration
 ├── .env.example
 ├── .dockerignore
 ├── .gitignore
@@ -201,17 +205,21 @@ GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 ```python
 from typing import List, Dict, Optional
 from datetime import datetime
+from fastapi import APIRouter, Query
 
-def get_branches_by_team(
-    team: str,
-    status: Optional[str] = None
+router = APIRouter()
+
+@router.get("/branches")
+async def get_branches_by_team(
+    team: str = Query(..., description="ชื่อทีม (new_branch, legal, srd, scm)"),
+    status: Optional[str] = Query(None, description="สถานะสาขา (active, opening, closed)")
 ) -> List[Dict[str, str]]:
     """
     ดึงข้อมูลสาขาตามทีมที่รับผิดชอบ
 
     Args:
-        team: ชื่อทีม (new_branch, legal, srd, scm)
-        status: สถานะสาขา (active, opening, closed) - optional
+        team: ชื่อทีม
+        status: สถานะสาขา - optional
 
     Returns:
         List of branch dictionaries
@@ -232,35 +240,80 @@ def get_branches_by_team(
 - ไม่เก็บ credentials ใน code หรือ git
 - ใช้ environment variables สำหรับ sensitive data
 
+## Frontend Setup (Tailwind CSS)
+
+### package.json
+```json
+{
+  "name": "retail-branch-demo",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch",
+    "build": "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}
+```
+
+### tailwind.config.js
+```javascript
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./app/templates/**/*.html",
+    "./static/js/**/*.js"
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+```
+
+### static/css/input.css
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
 ## Minimal Dependencies (requirements.txt)
 ```txt
-flask==3.0.0                    # Web framework
-google-cloud-bigquery==3.13.0   # BigQuery client
-google-cloud-storage==2.10.0    # GCS client
-python-dotenv==1.0.0            # Environment variables
-gunicorn==21.2.0                # Production server
-pytest==7.4.3                   # Testing
+fastapi==0.121.1                # Modern async web framework
+uvicorn==0.38.0                 # ASGI server for production
+jinja2==3.1.6                   # Template engine
+google-cloud-bigquery==3.38.0   # BigQuery client
+google-cloud-storage==3.5.0     # GCS client
+python-dotenv==1.2.1            # Environment variables
+pytest==9.0.1                   # Testing framework
 ```
 
 ## Next Steps
 
 1. สร้างโครงสร้างโปรเจกต์ตาม Application Structure
-2. ตั้งค่า BigQuery dataset และสร้าง tables
-3. สร้าง GCS bucket สำหรับเก็บเอกสาร
-4. พัฒนา backend services (BigQuery, GCS)
-5. สร้าง API routes สำหรับ CRUD operations
-6. พัฒนา frontend (responsive UI)
-7. ใส่ระบบ authentication และ authorization
-8. เขียน tests
-9. สร้าง Dockerfile
-10. Deploy ไปยัง Cloud Run
-11. ทดสอบระบบ
+2. ติดตั้ง Python dependencies (requirements.txt)
+3. ติดตั้ง Node.js และ setup Tailwind CSS
+4. ตั้งค่า BigQuery dataset และสร้าง tables
+5. สร้าง GCS bucket สำหรับเก็บเอกสาร
+6. พัฒนา backend services (BigQuery, GCS)
+7. สร้าง API routes สำหรับ CRUD operations (FastAPI)
+8. พัฒนา frontend (HTML templates + Tailwind CSS)
+9. ใส่ระบบ authentication และ authorization
+10. เขียน tests
+11. สร้าง Dockerfile
+12. Deploy ไปยัง Cloud Run
+13. ทดสอบระบบ
 
 ## Notes
 
 - ระบบนี้เน้นความเรียบง่ายและประสิทธิภาพ
+- ใช้ FastAPI เป็น web framework (modern, async, fast)
+- ใช้ Tailwind CSS สำหรับ responsive UI
 - ใช้ BigQuery เป็น database หลัก (serverless, scalable)
 - ใช้ GCS สำหรับเก็บไฟล์ขนาดใหญ่
 - Deploy บน Cloud Run (serverless, auto-scaling)
 - แต่ละทีมมี view และ permissions แยกกัน
 - Code ต้องอ่านง่าย maintain ง่าย
+- ใช้ library เวอร์ชันล่าสุดจาก PyPI
