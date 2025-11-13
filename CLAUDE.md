@@ -7,7 +7,7 @@
 ## Features & Requirements
 
 ### Core Features
-- **Google OAuth Authentication**: ระบบ login ผ่าน Google OAuth 2.0
+- **User Authentication (Google OAuth 2.0)**: ระบบ login เข้าใช้งานผ่าน Google Account โดยผู้ใช้ทุกคนต้อง login ก่อนเข้าใช้งานระบบ
 - **CRUD Operations**: สามารถเพิ่ม แก้ไข และลบข้อมูลสาขาได้
 - **Multi-Team Access**: รองรับการเข้าใช้งานของหลายทีม โดยแต่ละทีมมีสิทธิ์และเห็นเมนูเฉพาะของตนเอง
 - **Branch Data Management**: จัดการข้อมูลสาขา เช่น รหัสสาขา, ชื่อสาขา, ที่อยู่
@@ -179,7 +179,30 @@ CREATE TABLE retail_branches.users (
 );
 ```
 
-## Authentication (Google OAuth 2.0)
+## User Authentication (Google OAuth 2.0)
+
+ระบบใช้ **Google OAuth 2.0** สำหรับการ login เข้าใช้งานของผู้ใช้ทุกคน โดยผู้ใช้จะต้อง login ด้วย Google Account ก่อนเข้าใช้งานระบบ ซึ่งจะช่วยให้:
+- ไม่ต้องสร้างและจัดการ password เอง (ใช้ Google authentication)
+- รองรับ Single Sign-On (SSO)
+- ปลอดภัยและเชื่อถือได้ (Google's security)
+- ตรวจสอบสิทธิ์ผู้ใช้จาก email domain
+
+### Login Page Design
+
+หน้า Login (`/login`) เป็นหน้าแรกที่ผู้ใช้เข้าถึงเมื่อยังไม่ได้ login:
+
+**หน้า Login จะประกอบด้วย:**
+- Logo และชื่อระบบ "Retail Branch Management System"
+- คำอธิบายสั้นๆ เกี่ยวกับระบบ
+- ปุ่ม "Sign in with Google" พร้อม Google logo
+- Footer พร้อม copyright information
+- Responsive design สำหรับทุกอุปกรณ์
+
+**UI/UX:**
+- ใช้ Tailwind CSS เพื่อ clean และ modern design
+- Centered layout พร้อม card/container สำหรับ login form
+- Loading state เมื่อกำลัง redirect ไป Google
+- Error message หากการ login ล้มเหลว
 
 ### Setup OAuth Client
 1. ไปที่ [Google Cloud Console](https://console.cloud.google.com/)
@@ -198,15 +221,53 @@ OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback
 SESSION_SECRET=your-random-secret-key
 ```
 
-### OAuth Flow
-1. ผู้ใช้กด "Login with Google"
-2. Redirect ไปยัง Google OAuth consent screen
-3. ผู้ใช้อนุมัติการเข้าถึง
-4. Google redirect กลับมาพร้อม authorization code
-5. แลก code เป็น access token
-6. ดึงข้อมูลผู้ใช้จาก Google API
-7. ตรวจสอบ email กับ BigQuery (table: users)
-8. สร้าง session และ redirect ไปหน้าแรก
+### User Authentication Flow
+1. **ผู้ใช้เข้าหน้า Login**: เข้าที่ `/` หรือ `/login`
+2. **กด "Sign in with Google"**: คลิกปุ่ม login
+3. **Redirect to Google**: ระบบ redirect ไปยัง Google OAuth consent screen
+4. **ผู้ใช้เลือก Google Account**: เลือก account และอนุมัติการเข้าถึงข้อมูล
+5. **Google Callback**: Google redirect กลับมาที่ `/auth/callback` พร้อม authorization code
+6. **Exchange Token**: Backend แลก authorization code เป็น access token
+7. **Get User Info**: ดึงข้อมูลผู้ใช้จาก Google API (email, name, picture)
+8. **Verify User**: ตรวจสอบ email กับ BigQuery (table: `users`)
+   - ถ้ามี user ในระบบ → อนุญาตให้ login
+   - ถ้าไม่มี → แสดง error "Unauthorized user"
+9. **Create Session**: สร้าง session cookie สำหรับ user
+10. **Update Last Login**: อัพเดท `last_login` timestamp ใน BigQuery
+11. **Redirect to Dashboard**: ส่งผู้ใช้ไปหน้าแรกตาม team ของ user
+
+### Session Management
+
+**Session Storage:**
+- ใช้ **itsdangerous** สำหรับ signed session cookies
+- เก็บข้อมูล: `user_id`, `email`, `name`, `team`, `role`
+- Session timeout: 24 ชั่วโมง (configurable)
+
+**Session Cookie Settings:**
+- `httponly=True`: ป้องกัน XSS attacks
+- `secure=True`: ใช้ HTTPS only (production)
+- `samesite='Lax'`: ป้องกัน CSRF attacks
+
+### Protected Routes
+
+**Route Protection:**
+- ทุก route (ยกเว้น `/login` และ `/auth/callback`) ต้อง login ก่อน
+- Middleware ตรวจสอบ session cookie ทุก request
+- ถ้าไม่มี session → redirect to `/login`
+- ถ้า session หมดอายุ → redirect to `/login` พร้อม message
+
+**Team-Based Access Control:**
+- ตรวจสอบ `team` จาก session
+- แสดงเฉพาะเมนูและข้อมูลที่ team มีสิทธิ์เข้าถึง
+- ถ้าเข้าถึง route ที่ไม่มีสิทธิ์ → แสดง 403 Forbidden
+
+### Logout
+
+**Logout Flow:**
+1. ผู้ใช้คลิก "Logout"
+2. ลบ session cookie
+3. (Optional) Revoke Google access token
+4. Redirect to `/login`
 
 ## Local Development Setup
 
@@ -667,9 +728,10 @@ httpx==0.27.0                   # HTTP client for OAuth (required by authlib)
 ## Notes
 
 - ระบบนี้เน้นความเรียบง่ายและประสิทธิภาพ
+- **ผู้ใช้ทุกคนต้อง login ผ่าน Google OAuth 2.0 ก่อนเข้าใช้งาน**
 - ใช้ FastAPI เป็น web framework (modern, async, fast)
 - ใช้ Tailwind CSS สำหรับ responsive UI
-- ใช้ Google OAuth 2.0 สำหรับ authentication
+- ใช้ Google OAuth 2.0 สำหรับ user authentication และ login
 - ใช้ UV package manager สำหรับจัดการ Python dependencies (เร็วกว่า pip)
 - ใช้ BigQuery เป็น database หลัก (serverless, scalable)
 - ใช้ GCS สำหรับเก็บไฟล์ขนาดใหญ่
@@ -677,5 +739,6 @@ httpx==0.27.0                   # HTTP client for OAuth (required by authlib)
 - ใช้ GitLab CI/CD สำหรับ automated deployment
 - แต่ละทีมมี view และ permissions แยกกัน
 - Manual deployment trigger สำหรับทั้ง DEV และ PROD
+- Session-based authentication พร้อม secure cookies
 - Code ต้องอ่านง่าย maintain ง่าย
 - ใช้ library เวอร์ชันล่าสุดจาก PyPI
