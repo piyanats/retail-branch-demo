@@ -7,6 +7,7 @@
 ## Features & Requirements
 
 ### Core Features
+- **Google OAuth Authentication**: ระบบ login ผ่าน Google OAuth 2.0
 - **CRUD Operations**: สามารถเพิ่ม แก้ไข และลบข้อมูลสาขาได้
 - **Multi-Team Access**: รองรับการเข้าใช้งานของหลายทีม โดยแต่ละทีมมีสิทธิ์และเห็นเมนูเฉพาะของตนเอง
 - **Branch Data Management**: จัดการข้อมูลสาขา เช่น รหัสสาขา, ชื่อสาขา, ที่อยู่
@@ -27,9 +28,11 @@
 ### Backend
 - **Python 3.12**: ภาษาหลักในการพัฒนา
 - **Framework**: FastAPI - modern, fast, async web framework
+- **Authentication**: Google OAuth 2.0 สำหรับ login
 - **BigQuery**: Database หลักสำหรับเก็บข้อมูลสาขา
 - **Google Cloud Storage (GCS)**: เก็บไฟล์เอกสาร
 - **Uvicorn**: ASGI server สำหรับ production
+- **UV**: Package manager สำหรับจัดการ Python dependencies
 
 ### Frontend
 - **HTML5/CSS3**: โครงสร้างและการออกแบบ
@@ -39,7 +42,8 @@
 ### Infrastructure
 - **Google Cloud Run**: สำหรับ deployment
 - **Service Account**: สำหรับ authentication กับ GCP services
-- **Docker**: Container สำหรับการ deploy
+- **Docker**: Container สำหรับการ deploy (ใช้ UV package manager)
+- **GitLab CI/CD**: Automated deployment pipeline
 
 ## Architecture
 
@@ -77,9 +81,11 @@ retail-branch-demo/
 │   ├── services/               # Business logic
 │   │   ├── __init__.py
 │   │   ├── bigquery_service.py
-│   │   └── storage_service.py
+│   │   ├── storage_service.py
+│   │   └── oauth_service.py    # Google OAuth service
 │   ├── routes/                 # API routes/endpoints
 │   │   ├── __init__.py
+│   │   ├── auth_routes.py      # OAuth routes
 │   │   ├── branch_routes.py
 │   │   └── document_routes.py
 │   ├── middleware/             # Authentication & Authorization
@@ -88,6 +94,7 @@ retail-branch-demo/
 │   └── templates/              # HTML templates
 │       ├── base.html
 │       ├── index.html
+│       ├── login.html          # OAuth login page
 │       └── teams/
 │           ├── new_branch.html
 │           ├── legal.html
@@ -99,11 +106,16 @@ retail-branch-demo/
 │   │   └── output.css           # Tailwind compiled output
 │   └── js/
 │       └── app.js
+├── scripts/
+│   ├── setup_local.sh          # Setup local environment with UV
+│   └── run_local.sh            # Run local development server
 ├── tests/
 │   ├── __init__.py
 │   └── test_services.py
 ├── Dockerfile
+├── .gitlab-ci.yml              # GitLab CI/CD pipeline
 ├── requirements.txt
+├── pyproject.toml              # UV configuration
 ├── package.json                # Node.js for Tailwind CSS
 ├── tailwind.config.js          # Tailwind configuration
 ├── .env.example
@@ -167,6 +179,335 @@ CREATE TABLE retail_branches.users (
 );
 ```
 
+## Authentication (Google OAuth 2.0)
+
+### Setup OAuth Client
+1. ไปที่ [Google Cloud Console](https://console.cloud.google.com/)
+2. เปิด **APIs & Services** > **Credentials**
+3. สร้าง **OAuth 2.0 Client ID** (Application type: Web application)
+4. ตั้งค่า **Authorized redirect URIs**:
+   - Development: `http://localhost:8000/auth/callback`
+   - Production: `https://your-domain.run.app/auth/callback`
+5. บันทึก **Client ID** และ **Client Secret**
+
+### Environment Variables for OAuth
+```bash
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback
+SESSION_SECRET=your-random-secret-key
+```
+
+### OAuth Flow
+1. ผู้ใช้กด "Login with Google"
+2. Redirect ไปยัง Google OAuth consent screen
+3. ผู้ใช้อนุมัติการเข้าถึง
+4. Google redirect กลับมาพร้อม authorization code
+5. แลก code เป็น access token
+6. ดึงข้อมูลผู้ใช้จาก Google API
+7. ตรวจสอบ email กับ BigQuery (table: users)
+8. สร้าง session และ redirect ไปหน้าแรก
+
+## Local Development Setup
+
+### Prerequisites
+- Python 3.12+
+- Node.js 18+ (สำหรับ Tailwind CSS)
+- UV Package Manager
+
+### Install UV Package Manager
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+### Setup Script (scripts/setup_local.sh)
+```bash
+#!/bin/bash
+
+# Install UV if not already installed
+if ! command -v uv &> /dev/null; then
+    echo "Installing UV package manager..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
+# Create virtual environment with UV
+echo "Creating virtual environment..."
+uv venv
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install Python dependencies
+echo "Installing Python dependencies..."
+uv pip install -r requirements.txt
+
+# Install Node.js dependencies for Tailwind CSS
+echo "Installing Node.js dependencies..."
+npm install
+
+# Build Tailwind CSS
+echo "Building Tailwind CSS..."
+npm run build
+
+# Copy .env.example to .env
+if [ ! -f .env ]; then
+    echo "Creating .env file..."
+    cp .env.example .env
+    echo "Please update .env with your credentials"
+fi
+
+echo "Setup complete! Run './scripts/run_local.sh' to start the server"
+```
+
+### Run Script (scripts/run_local.sh)
+```bash
+#!/bin/bash
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run Tailwind CSS in watch mode (background)
+npm run dev &
+TAILWIND_PID=$!
+
+# Run FastAPI development server
+echo "Starting FastAPI development server..."
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Cleanup on exit
+trap "kill $TAILWIND_PID" EXIT
+```
+
+### Quick Start
+```bash
+# Setup environment
+chmod +x scripts/*.sh
+./scripts/setup_local.sh
+
+# Run development server
+./scripts/run_local.sh
+```
+
+## CI/CD Pipeline (GitLab CI)
+
+### .gitlab-ci.yml
+```yaml
+stages:
+  - build
+  - deploy-dev
+  - deploy-prod
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  IMAGE_NAME: gcr.io/${GCP_PROJECT_ID}/retail-branch-demo
+
+# Build Docker image
+build:
+  stage: build
+  image: google/cloud-sdk:alpine
+  services:
+    - docker:dind
+  before_script:
+    - echo $GCP_SERVICE_KEY | base64 -d > ${HOME}/gcp-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+    - gcloud auth configure-docker
+  script:
+    - docker build -t ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} .
+    - docker tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} ${IMAGE_NAME}:latest
+    - docker push ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+    - docker push ${IMAGE_NAME}:latest
+  only:
+    - main
+    - tags
+
+# Deploy to DEV (manual trigger on main branch)
+deploy-dev:
+  stage: deploy-dev
+  image: google/cloud-sdk:alpine
+  before_script:
+    - echo $GCP_SERVICE_KEY_DEV | base64 -d > ${HOME}/gcp-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID_DEV
+  script:
+    - |
+      gcloud run deploy retail-branch-demo \
+        --image ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} \
+        --platform managed \
+        --region asia-southeast1 \
+        --allow-unauthenticated \
+        --service-account ${SERVICE_ACCOUNT_DEV} \
+        --set-env-vars "PROJECT_ID=${GCP_PROJECT_ID_DEV},DATASET_ID=retail_branches,GCS_BUCKET=${GCS_BUCKET_DEV}" \
+        --set-secrets "GOOGLE_CLIENT_ID=oauth_client_id:latest,GOOGLE_CLIENT_SECRET=oauth_client_secret:latest,SESSION_SECRET=session_secret:latest"
+  when: manual
+  only:
+    - main
+  environment:
+    name: development
+    url: https://retail-branch-demo-dev-xxxxxxxxxx-as.a.run.app
+
+# Deploy to PROD (manual trigger on tags only)
+deploy-prod:
+  stage: deploy-prod
+  image: google/cloud-sdk:alpine
+  before_script:
+    - echo $GCP_SERVICE_KEY_PROD | base64 -d > ${HOME}/gcp-key.json
+    - gcloud auth activate-service-account --key-file ${HOME}/gcp-key.json
+    - gcloud config set project $GCP_PROJECT_ID_PROD
+  script:
+    - |
+      gcloud run deploy retail-branch-demo \
+        --image ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} \
+        --platform managed \
+        --region asia-southeast1 \
+        --allow-unauthenticated \
+        --service-account ${SERVICE_ACCOUNT_PROD} \
+        --set-env-vars "PROJECT_ID=${GCP_PROJECT_ID_PROD},DATASET_ID=retail_branches,GCS_BUCKET=${GCS_BUCKET_PROD}" \
+        --set-secrets "GOOGLE_CLIENT_ID=oauth_client_id:latest,GOOGLE_CLIENT_SECRET=oauth_client_secret:latest,SESSION_SECRET=session_secret:latest"
+  when: manual
+  only:
+    - tags
+  environment:
+    name: production
+    url: https://retail-branch-demo-xxxxxxxxxx-as.a.run.app
+```
+
+### GitLab CI/CD Variables
+ตั้งค่า variables ใน GitLab Project Settings > CI/CD > Variables:
+
+**General:**
+- `GCP_PROJECT_ID`: Google Cloud Project ID
+- `GCP_SERVICE_KEY`: Service Account Key (base64 encoded) สำหรับ build
+
+**Development:**
+- `GCP_PROJECT_ID_DEV`: GCP Project ID สำหรับ dev
+- `GCP_SERVICE_KEY_DEV`: Service Account Key (base64) สำหรับ dev
+- `SERVICE_ACCOUNT_DEV`: Service Account email สำหรับ Cloud Run dev
+- `GCS_BUCKET_DEV`: GCS Bucket สำหรับ dev
+
+**Production:**
+- `GCP_PROJECT_ID_PROD`: GCP Project ID สำหรับ prod
+- `GCP_SERVICE_KEY_PROD`: Service Account Key (base64) สำหรับ prod
+- `SERVICE_ACCOUNT_PROD`: Service Account email สำหรับ Cloud Run prod
+- `GCS_BUCKET_PROD`: GCS Bucket สำหรับ prod
+
+### Deployment Workflow
+1. **Development**: Push to `main` branch → Build → Manual deploy to DEV
+2. **Production**: Create tag (e.g., `v1.0.0`) → Build → Manual deploy to PROD
+
+```bash
+# Deploy to production
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+## Dockerfile with UV Package Manager
+
+### Dockerfile
+```dockerfile
+# Use Python 3.12 slim image
+FROM python:3.12-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install UV package manager
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    UV_SYSTEM_PYTHON=1
+
+# Copy dependency files
+COPY requirements.txt pyproject.toml ./
+
+# Install dependencies using UV
+RUN uv pip install --system --no-cache -r requirements.txt
+
+# Copy application code
+COPY ./app ./app
+COPY ./static ./static
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Expose port
+EXPOSE 8080
+
+# Run the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+```
+
+### .dockerignore
+```
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+*.egg-info/
+dist/
+build/
+*.md
+.env
+.env.local
+node_modules/
+static/css/input.css
+tests/
+```
+
+### pyproject.toml
+```toml
+[project]
+name = "retail-branch-demo"
+version = "1.0.0"
+description = "Retail Branch Management System"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.121.1",
+    "uvicorn==0.38.0",
+    "jinja2==3.1.6",
+    "authlib==1.6.5",
+    "itsdangerous==2.2.0",
+    "google-cloud-bigquery==3.38.0",
+    "google-cloud-storage==3.5.0",
+    "python-dotenv==1.2.1",
+    "pytest==9.0.1",
+    "httpx==0.27.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = []
+```
+
 ## Deployment (Google Cloud Run)
 
 ### Prerequisites
@@ -179,10 +520,17 @@ CREATE TABLE retail_branches.users (
 
 ### Environment Variables
 ```bash
+# Google Cloud Platform
 PROJECT_ID=your-gcp-project-id
 DATASET_ID=retail_branches
 GCS_BUCKET=retail-branch-documents
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+
+# OAuth Configuration
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback
+SESSION_SECRET=your-random-secret-key-min-32-chars
 ```
 
 ### Deployment Steps
@@ -284,36 +632,50 @@ module.exports = {
 fastapi==0.121.1                # Modern async web framework
 uvicorn==0.38.0                 # ASGI server for production
 jinja2==3.1.6                   # Template engine
+authlib==1.6.5                  # OAuth client library
+itsdangerous==2.2.0             # Secure session management
 google-cloud-bigquery==3.38.0   # BigQuery client
 google-cloud-storage==3.5.0     # GCS client
 python-dotenv==1.2.1            # Environment variables
 pytest==9.0.1                   # Testing framework
+httpx==0.27.0                   # HTTP client for OAuth (required by authlib)
 ```
 
 ## Next Steps
 
 1. สร้างโครงสร้างโปรเจกต์ตาม Application Structure
-2. ติดตั้ง Python dependencies (requirements.txt)
-3. ติดตั้ง Node.js และ setup Tailwind CSS
-4. ตั้งค่า BigQuery dataset และสร้าง tables
-5. สร้าง GCS bucket สำหรับเก็บเอกสาร
-6. พัฒนา backend services (BigQuery, GCS)
-7. สร้าง API routes สำหรับ CRUD operations (FastAPI)
-8. พัฒนา frontend (HTML templates + Tailwind CSS)
-9. ใส่ระบบ authentication และ authorization
-10. เขียน tests
-11. สร้าง Dockerfile
-12. Deploy ไปยัง Cloud Run
-13. ทดสอบระบบ
+2. สร้าง local development scripts (setup_local.sh, run_local.sh)
+3. ติดตั้ง UV package manager
+4. ติดตั้ง Python dependencies ด้วย UV (requirements.txt)
+5. ติดตั้ง Node.js และ setup Tailwind CSS
+6. ตั้งค่า Google OAuth 2.0 Client ID
+7. ตั้งค่า BigQuery dataset และสร้าง tables
+8. สร้าง GCS bucket สำหรับเก็บเอกสาร
+9. พัฒนา backend services (BigQuery, GCS, OAuth)
+10. สร้าง API routes สำหรับ authentication และ CRUD operations (FastAPI)
+11. พัฒนา frontend (HTML templates + Tailwind CSS + OAuth login)
+12. ใส่ระบบ authorization ตาม team roles
+13. เขียน tests
+14. สร้าง Dockerfile (with UV package manager)
+15. สร้าง .gitlab-ci.yml สำหรับ CI/CD pipeline
+16. ตั้งค่า GitLab CI/CD variables
+17. Deploy ไปยัง Cloud Run (DEV)
+18. ทดสอบระบบบน DEV environment
+19. สร้าง tag และ deploy ไปยัง PROD
+20. ทดสอบระบบบน PROD environment
 
 ## Notes
 
 - ระบบนี้เน้นความเรียบง่ายและประสิทธิภาพ
 - ใช้ FastAPI เป็น web framework (modern, async, fast)
 - ใช้ Tailwind CSS สำหรับ responsive UI
+- ใช้ Google OAuth 2.0 สำหรับ authentication
+- ใช้ UV package manager สำหรับจัดการ Python dependencies (เร็วกว่า pip)
 - ใช้ BigQuery เป็น database หลัก (serverless, scalable)
 - ใช้ GCS สำหรับเก็บไฟล์ขนาดใหญ่
 - Deploy บน Cloud Run (serverless, auto-scaling)
+- ใช้ GitLab CI/CD สำหรับ automated deployment
 - แต่ละทีมมี view และ permissions แยกกัน
+- Manual deployment trigger สำหรับทั้ง DEV และ PROD
 - Code ต้องอ่านง่าย maintain ง่าย
 - ใช้ library เวอร์ชันล่าสุดจาก PyPI
