@@ -50,6 +50,7 @@
 - **[features/audit-logs.md](features/audit-logs.md)** - Audit Logs & Activity Tracking
 
 **Team Features:**
+- **[features/new-branch.md](features/new-branch.md)** - New Branch Team (Branch Opening Tracking)
 - **[features/legal-ppp09.md](features/legal-ppp09.md)** - Legal Team (ภ.พ.09 & ภ.พ.20 Management)
 - **[features/srd-layout.md](features/srd-layout.md)** - SRD Team (Layout Management)
 - **[features/scm-dc.md](features/scm-dc.md)** - SCM Team (DC Management)

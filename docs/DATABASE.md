@@ -161,6 +161,41 @@ CREATE TABLE retail_branches.legal_documents (
 );
 ```
 
+### Table: `new_branch_tracking`
+
+ตารางเก็บข้อมูลสาขาใหม่ที่อยู่ระหว่างการเปิด สำหรับทีมสาขาใหม่
+
+```sql
+CREATE TABLE retail_branches.new_branch_tracking (
+  tracking_id STRING NOT NULL,             -- รหัส Tracking (UUID)
+  branch_id STRING NOT NULL,               -- รหัสสาขา (UNIQUE)
+  branch_name STRING NOT NULL,             -- ชื่อสาขา
+
+  -- Location
+  province STRING NOT NULL,                -- จังหวัด
+  district STRING NOT NULL,                -- อำเภอ/เขต
+  address STRING,                          -- ที่อยู่โดยละเอียด
+
+  -- Status & Timeline
+  branch_status STRING NOT NULL,           -- สถานะ (รอเปิด, ก่อสร้าง, เปิดทำการ)
+  estimate_opening_date DATE NOT NULL,     -- วันที่ประมาณการเปิดทำการ
+  actual_opening_date DATE,                -- วันที่เปิดทำการจริง
+
+  -- Contact
+  responsible_person STRING,               -- ผู้รับผิดชอบ
+  contact_phone STRING,                    -- เบอร์โทรติดต่อ
+
+  -- Notes
+  remarks STRING,                          -- หมายเหตุ
+
+  -- Metadata
+  created_at TIMESTAMP,                    -- วันที่สร้างข้อมูล
+  updated_at TIMESTAMP,                    -- วันที่แก้ไขล่าสุด
+  created_by STRING,                       -- ผู้สร้าง
+  updated_by STRING                        -- ผู้แก้ไข
+);
+```
+
 ### Table: `srd_layout`
 
 ตารางเก็บข้อมูล Layout และรูปแบบสาขา สำหรับทีม SRD
@@ -278,6 +313,10 @@ CREATE TABLE retail_branches.audit_logs (
 - **ที่อยู่ใน `legal_ppp09`** แยกเป็น fields เพื่อให้ค้นหาและจัดการได้ง่าย
 - **`legal_ppp09.ppp09_number`** เป็น unique per branch (เลขที่ตามสรรพากร)
 - **สถานะของสาขา** ใน `legal_ppp09`: ยังไม่จดสรรพากร, เปิดให้บริการ, รอเปิดทำการ
+- **`new_branch_tracking`** เก็บข้อมูลสาขาที่อยู่ระหว่างการเปิดใหม่ สำหรับทีมสาขาใหม่
+- **`new_branch_tracking.branch_id`** เป็น unique (1 สาขา : 1 record)
+- **สถานะสาขา** ใน `new_branch_tracking`: รอเปิด, ก่อสร้าง, เปิดทำการ
+- **`new_branch_tracking`** เมื่อสถานะเป็น "เปิดทำการ" จะแจ้งเตือนทีมอื่นให้จัดการข้อมูล
 - **`srd_layout`** เก็บข้อมูล Layout และรูปแบบสาขา (Assortment Type, Format, Flags) สำหรับทีม SRD
 - **`srd_layout.branch_id`** เชื่อมโยงกับ `branches.branch_id` (1 สาขา : 1 Layout)
 - **Assortment Type** ใน `srd_layout`: มาตรฐาน, เมือง
@@ -292,6 +331,7 @@ CREATE TABLE retail_branches.audit_logs (
 
 ### Partitioning
 - **`audit_logs`** - Partition โดย `created_at` (รายวัน)
+- **`new_branch_tracking`** - Partition โดย `DATE_TRUNC(estimate_opening_date, MONTH)` (รายเดือน)
 - **`legal_ppp09`** - Partition โดย `DATE(created_at)` (รายวัน)
 - **`legal_ppp20`** - Partition โดย `DATE(created_at)` (รายวัน)
 - **`legal_documents`** - Partition โดย `DATE(uploaded_at)` (รายวัน)
@@ -300,6 +340,7 @@ CREATE TABLE retail_branches.audit_logs (
 
 ### Clustering
 - **`audit_logs`** - Cluster โดย `user_id` และ `action_type`
+- **`new_branch_tracking`** - Cluster โดย `branch_status` และ `province`
 - **`legal_ppp09`** - Cluster โดย `branch_id` และ `branch_status`
 - **`legal_ppp20`** - Cluster โดย `branch_id` และ `tax_period`
 - **`legal_documents`** - Cluster โดย `document_type` และ `branch_id`
@@ -320,6 +361,7 @@ CREATE TABLE retail_branches.audit_logs (
 
 - [features/user-management.md](features/user-management.md) - User & permissions management
 - [features/audit-logs.md](features/audit-logs.md) - Audit logs details
+- [features/new-branch.md](features/new-branch.md) - New Branch Team management
 - [features/legal-ppp09.md](features/legal-ppp09.md) - Legal Team (ภ.พ.09 & ภ.พ.20) management
 - [features/srd-layout.md](features/srd-layout.md) - SRD Team Layout management
 - [features/scm-dc.md](features/scm-dc.md) - SCM Team DC management

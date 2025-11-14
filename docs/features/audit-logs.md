@@ -12,7 +12,7 @@
 - **ดูบันทึก activity ทั้งหมด**: แสดงตาราง audit logs พร้อม filter และ search
 - **กรองตามผู้ใช้**: เลือกดู activity ของ user คนใดคนหนึ่ง
 - **กรองตาม action type**: login, create, update, delete, permission_change
-- **กรองตาม resource**: branch, document, user, permission, ppp09, ppp20, srd_layout, scm_dc
+- **กรองตาม resource**: branch, document, user, permission, ppp09, ppp20, srd_layout, scm_dc, new_branch
 - **กรองตามช่วงเวลา**: เลือกช่วงวันที่
 - **ค้นหา**: ค้นหาจาก email, resource_id, action_detail
 - **Export**: Export logs เป็น CSV สำหรับการวิเคราะห์
@@ -84,6 +84,13 @@
 - `scm_dc_change_completed` - เปลี่ยน DC สำเร็จ (auto)
 - `scm_dc_schedule_updated` - แก้ไขกำหนดการเปลี่ยน DC
 - `scm_dc_schedule_cancelled` - ยกเลิกกำหนดการเปลี่ยน DC
+
+### New Branch Team - Branch Tracking Actions
+- `new_branch_create` - สร้างข้อมูลสาขาใหม่
+- `new_branch_update` - แก้ไขข้อมูลสาขาใหม่
+- `new_branch_delete` - ลบข้อมูลสาขาใหม่
+- `new_branch_status_change` - เปลี่ยนสถานะสาขา (รอเปิด → ก่อสร้าง → เปิดทำการ)
+- `new_branch_opened` - บันทึกวันเปิดสาขาจริง (Actual Opening Date)
 
 ## Audit Log Retention
 
