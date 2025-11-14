@@ -78,16 +78,14 @@ CREATE TABLE retail_branches.user_teams (
 
 ### Table: `legal_ppp09`
 
-ตารางเก็บข้อมูล ภ.พ.09 (แบบแจ้งการประเมินภาษีที่ดินและสิ่งปลูกสร้าง)
+ตารางเก็บข้อมูล ภ.พ.09 (แบบแจ้งการประเมินภาษีที่ดินและสิ่งปลูกสร้าง) สำหรับการจดทะเบียนที่อยู่สาขาตามสรรพากร
 
 ```sql
 CREATE TABLE retail_branches.legal_ppp09 (
   ppp09_id STRING NOT NULL,                -- รหัส ภ.พ.09 (UUID)
   branch_id STRING NOT NULL,               -- รหัสสาขา (FK -> branches.branch_id)
-  ppp09_number STRING,                     -- เลขที่ ภ.พ.09
-  issue_date DATE,                         -- วันที่ออกเอกสาร
-  expiry_date DATE,                        -- วันหมดอายุ
-  owner_name STRING,                       -- ชื่อเจ้าของ/ผู้เสียภาษี
+  ppp09_number STRING NOT NULL,            -- เลขที่ตามสรรพากร (ภ.พ.09)
+  registration_date DATE,                  -- วันที่จดทะเบียน
 
   -- ที่อยู่ตาม ภ.พ.09 (แยกตาม field)
   address_number STRING,                   -- บ้านเลขที่
@@ -100,19 +98,11 @@ CREATE TABLE retail_branches.legal_ppp09 (
   address_province STRING,                 -- จังหวัด
   address_postal_code STRING,              -- รหัสไปรษณีย์
 
-  -- ข้อมูลเพิ่มเติม
-  land_area_rai FLOAT64,                   -- เนื้อที่ดิน (ไร่)
-  land_area_ngan FLOAT64,                  -- เนื้อที่ดิน (งาน)
-  land_area_wa FLOAT64,                    -- เนื้อที่ดิน (ตารางวา)
-  building_area_sqm FLOAT64,              -- พื้นที่สิ่งปลูกสร้าง (ตร.ม.)
-  annual_tax_amount FLOAT64,              -- จำนวนเงินภาษีต่อปี (บาท)
-  payment_status STRING,                   -- สถานะการชำระ (paid, unpaid, overdue)
+  -- ข้อมูลติดต่อ
+  phone_number STRING,                     -- หมายเลขโทรศัพท์
 
-  -- เอกสาร PDF
-  pdf_file_path STRING,                    -- path ใน GCS สำหรับ PDF ภ.พ.09
-  pdf_file_size INT64,                     -- ขนาดไฟล์ PDF (bytes)
-  pdf_uploaded_at TIMESTAMP,               -- วันที่อัพโหลด PDF
-  pdf_uploaded_by STRING,                  -- ผู้อัพโหลด PDF
+  -- สถานะ
+  branch_status STRING,                    -- สถานะของสาขา (ยังไม่จดสรรพากร, เปิดให้บริการ, รอเปิดทำการ)
 
   -- หมายเหตุ
   remarks STRING,                          -- หมายเหตุเพิ่มเติม
@@ -122,6 +112,52 @@ CREATE TABLE retail_branches.legal_ppp09 (
   updated_at TIMESTAMP,                    -- วันที่แก้ไขล่าสุด
   created_by STRING,                       -- ผู้สร้าง
   updated_by STRING                        -- ผู้แก้ไข
+);
+```
+
+### Table: `legal_ppp20`
+
+ตารางเก็บข้อมูล ภ.พ.20 (แบบแสดงรายการภาษีมูลค่าเพิ่ม)
+
+```sql
+CREATE TABLE retail_branches.legal_ppp20 (
+  ppp20_id STRING NOT NULL,                -- รหัส ภ.พ.20 (UUID)
+  branch_id STRING NOT NULL,               -- รหัสสาขา (FK -> branches.branch_id)
+  tax_id STRING NOT NULL,                  -- เลขที่ตามสรรพากร
+  tax_period STRING NOT NULL,              -- งวดภาษี (format: "YYYY-MM" เช่น "2024-01")
+  filing_date DATE,                        -- วันที่ยื่น
+
+  -- หมายเหตุ
+  remarks STRING,                          -- หมายเหตุเพิ่มเติม
+
+  -- Metadata
+  created_at TIMESTAMP,                    -- วันที่สร้างข้อมูล
+  updated_at TIMESTAMP,                    -- วันที่แก้ไขล่าสุด
+  created_by STRING,                       -- ผู้สร้าง
+  updated_by STRING                        -- ผู้แก้ไข
+);
+```
+
+### Table: `legal_documents`
+
+ตารางเก็บเอกสารสำหรับ ภ.พ.09 และ ภ.พ.20 (รองรับหลายไฟล์)
+
+```sql
+CREATE TABLE retail_branches.legal_documents (
+  document_id STRING NOT NULL,             -- รหัสเอกสาร (UUID)
+  document_type STRING NOT NULL,           -- ประเภทเอกสาร (ppp09, ppp20)
+  reference_id STRING NOT NULL,            -- รหัสอ้างอิง (ppp09_id หรือ ppp20_id)
+  branch_id STRING NOT NULL,               -- รหัสสาขา (FK -> branches.branch_id)
+
+  -- ข้อมูลไฟล์
+  file_name STRING NOT NULL,               -- ชื่อไฟล์ต้นฉบับ
+  file_path STRING NOT NULL,               -- path ใน GCS
+  file_size INT64,                         -- ขนาดไฟล์ (bytes)
+  mime_type STRING,                        -- ประเภทไฟล์ (application/pdf, image/jpeg, etc.)
+
+  -- Metadata
+  uploaded_at TIMESTAMP,                   -- วันที่อัพโหลด
+  uploaded_by STRING                       -- ผู้อัพโหลด (user email)
 );
 ```
 
@@ -153,17 +189,28 @@ CREATE TABLE retail_branches.audit_logs (
 - **`user_teams.role`** กำหนดสิทธิ์ในแต่ละทีม (viewer, editor, manager)
 - **Admin** สามารถจัดการ users และ permissions ผ่านหน้า Admin
 - **`audit_logs`** เก็บบันทึก activity ทั้งหมดของ user รวมถึง admin
-- **`legal_ppp09`** เก็บข้อมูล ภ.พ.09 (แบบแจ้งการประเมินภาษีที่ดินและสิ่งปลูกสร้าง) สำหรับทีมกฎหมาย
-- **`legal_ppp09.branch_id`** เชื่อมโยงกับ `branches.branch_id` (1 สาขา สามารถมีได้ 1 ภ.พ.09 หรือมากกว่า ขึ้นอยู่กับการต่ออายุ)
+- **`legal_ppp09`** เก็บข้อมูลการจดทะเบียนที่อยู่สาขา (ภ.พ.09) สำหรับทีมกฎหมาย
+- **`legal_ppp20`** เก็บข้อมูลเอกสาร ภ.พ.20 (แบบแสดงรายการภาษีมูลค่าเพิ่ม) สำหรับทีมกฎหมาย
+- **`legal_documents`** เก็บเอกสารไฟล์สำหรับทั้ง ภ.พ.09 และ ภ.พ.20 (รองรับหลายไฟล์ต่อรายการ)
+- **`legal_ppp09.branch_id`** และ **`legal_ppp20.branch_id`** เชื่อมโยงกับ `branches.branch_id`
+- **`legal_documents.reference_id`** เชื่อมโยงกับ `ppp09_id` หรือ `ppp20_id` ตาม `document_type`
 - **ที่อยู่ใน `legal_ppp09`** แยกเป็น fields เพื่อให้ค้นหาและจัดการได้ง่าย
+- **`legal_ppp09.ppp09_number`** เป็น unique per branch (เลขที่ตามสรรพากร)
+- **สถานะของสาขา** ใน `legal_ppp09`: ยังไม่จดสรรพากร, เปิดให้บริการ, รอเปิดทำการ
 
 ## Performance Optimization
 
 ### Partitioning
-- `audit_logs` - Partition โดย `created_at` (รายวัน)
+- **`audit_logs`** - Partition โดย `created_at` (รายวัน)
+- **`legal_ppp09`** - Partition โดย `DATE(created_at)` (รายวัน)
+- **`legal_ppp20`** - Partition โดย `DATE(created_at)` (รายวัน)
+- **`legal_documents`** - Partition โดย `DATE(uploaded_at)` (รายวัน)
 
 ### Clustering
-- `audit_logs` - Cluster โดย `user_id` และ `action_type`
+- **`audit_logs`** - Cluster โดย `user_id` และ `action_type`
+- **`legal_ppp09`** - Cluster โดย `branch_id` และ `branch_status`
+- **`legal_ppp20`** - Cluster โดย `branch_id` และ `tax_period`
+- **`legal_documents`** - Cluster โดย `document_type` และ `branch_id`
 
 ### Indexing Recommendations
 - เนื่องจาก BigQuery ไม่มี traditional indexes แต่ใช้ partitioning และ clustering แทน
