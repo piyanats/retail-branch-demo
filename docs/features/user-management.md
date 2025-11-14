@@ -81,6 +81,284 @@ Admin จะเห็นเมนูเพิ่มเติม:
 - **Permissions**: กำหนดสิทธิ์ผู้ใช้
 - **All Teams**: เข้าถึงทุกทีม (New Branch, Legal, SRD, SCM)
 
+## API Endpoints
+
+### User Management APIs
+
+#### GET `/api/admin/users`
+ดึงรายการผู้ใช้ทั้งหมด
+
+**Query Parameters:**
+- `page` (optional): หมายเลขหน้า (default: 1)
+- `limit` (optional): จำนวนรายการต่อหน้า (default: 20, max: 100)
+- `search` (optional): ค้นหาจาก email หรือ name
+- `user_level` (optional): กรองตาม user level (admin, manager, editor, viewer)
+- `status` (optional): กรองตาม status (active, inactive)
+- `sort` (optional): เรียงลำดับ (created_at, last_login, email) ใช้ - สำหรับ descending
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "user_id": "uuid-123",
+      "email": "john@example.com",
+      "name": "John Doe",
+      "user_level": "editor",
+      "is_active": true,
+      "created_at": "2024-01-15T10:30:00Z",
+      "last_login": "2024-03-20T14:25:00Z",
+      "teams_count": 2
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 45,
+    "total_pages": 3
+  }
+}
+```
+
+#### GET `/api/admin/users/{user_id}`
+ดึงข้อมูลผู้ใช้รายเดียว
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": "uuid-123",
+    "email": "john@example.com",
+    "name": "John Doe",
+    "user_level": "editor",
+    "is_active": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-02-10T09:15:00Z",
+    "last_login": "2024-03-20T14:25:00Z",
+    "teams": [
+      {
+        "user_team_id": "uuid-456",
+        "team_name": "legal",
+        "role": "editor",
+        "created_at": "2024-01-15T10:30:00Z"
+      },
+      {
+        "user_team_id": "uuid-789",
+        "team_name": "new_branch",
+        "role": "viewer",
+        "created_at": "2024-01-20T11:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### POST `/api/admin/users`
+สร้างผู้ใช้ใหม่
+
+**Request Body:**
+```json
+{
+  "email": "jane@example.com",
+  "name": "Jane Smith",
+  "user_level": "editor"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "User created successfully",
+  "data": {
+    "user_id": "uuid-new",
+    "email": "jane@example.com",
+    "name": "Jane Smith",
+    "user_level": "editor",
+    "is_active": true,
+    "created_at": "2024-03-25T10:00:00Z"
+  }
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Validation failed",
+  "details": {
+    "email": ["Email already exists"],
+    "user_level": ["Must be one of: admin, manager, editor, viewer"]
+  },
+  "code": "VALIDATION_ERROR"
+}
+```
+
+#### PUT `/api/admin/users/{user_id}`
+แก้ไขข้อมูลผู้ใช้
+
+**Request Body:**
+```json
+{
+  "name": "John Doe Updated",
+  "user_level": "manager",
+  "is_active": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "User updated successfully",
+  "data": {
+    "user_id": "uuid-123",
+    "email": "john@example.com",
+    "name": "John Doe Updated",
+    "user_level": "manager",
+    "is_active": true,
+    "updated_at": "2024-03-25T11:30:00Z"
+  }
+}
+```
+
+#### DELETE `/api/admin/users/{user_id}`
+ปิดการใช้งานผู้ใช้ (soft delete)
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "User deactivated successfully",
+  "data": {
+    "user_id": "uuid-123",
+    "is_active": false
+  }
+}
+```
+
+### Permission Management APIs
+
+#### GET `/api/admin/permissions/{user_id}`
+ดึงสิทธิ์ทั้งหมดของผู้ใช้
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": "uuid-123",
+    "email": "john@example.com",
+    "name": "John Doe",
+    "permissions": [
+      {
+        "user_team_id": "uuid-456",
+        "team_name": "legal",
+        "role": "editor",
+        "created_at": "2024-01-15T10:30:00Z",
+        "created_by": "admin@example.com"
+      },
+      {
+        "user_team_id": "uuid-789",
+        "team_name": "new_branch",
+        "role": "viewer",
+        "created_at": "2024-01-20T11:00:00Z",
+        "created_by": "admin@example.com"
+      }
+    ]
+  }
+}
+```
+
+#### POST `/api/admin/permissions`
+เพิ่มสิทธิ์ให้ผู้ใช้เข้าทีม
+
+**Request Body:**
+```json
+{
+  "user_id": "uuid-123",
+  "team_name": "srd",
+  "role": "manager"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Permission added successfully",
+  "data": {
+    "user_team_id": "uuid-new",
+    "user_id": "uuid-123",
+    "team_name": "srd",
+    "role": "manager",
+    "created_at": "2024-03-25T12:00:00Z",
+    "created_by": "admin@example.com"
+  }
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Permission already exists",
+  "message": "User already has access to this team",
+  "code": "DUPLICATE_PERMISSION"
+}
+```
+
+#### PUT `/api/admin/permissions/{user_team_id}`
+แก้ไข role ของผู้ใช้ในทีม
+
+**Request Body:**
+```json
+{
+  "role": "editor"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Permission updated successfully",
+  "data": {
+    "user_team_id": "uuid-456",
+    "user_id": "uuid-123",
+    "team_name": "legal",
+    "role": "editor",
+    "updated_at": "2024-03-25T13:00:00Z"
+  }
+}
+```
+
+#### DELETE `/api/admin/permissions/{user_team_id}`
+ลบสิทธิ์ผู้ใช้ออกจากทีม
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Permission removed successfully"
+}
+```
+
+### Authentication Required
+**ทุก API endpoint ต้องมี authentication และเฉพาะ Admin เท่านั้นที่เข้าถึงได้**
+
+**Error Response (Unauthorized):**
+```json
+{
+  "success": false,
+  "error": "Unauthorized",
+  "message": "Admin access required",
+  "code": "UNAUTHORIZED"
+}
+```
+
 ## Related Documentation
 
 - [../DATABASE.md](../DATABASE.md) - Database schema for users and user_teams tables

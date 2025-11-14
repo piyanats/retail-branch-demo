@@ -76,6 +76,181 @@ SESSION_SECRET=your-random-secret-key
 3. (Optional) Revoke Google access token
 4. Redirect to `/login`
 
+## API Endpoints
+
+### GET `/auth/login`
+เริ่มต้น Google OAuth flow
+
+**Description:**
+- Redirect ผู้ใช้ไปยัง Google OAuth consent screen
+- สร้าง state parameter สำหรับ CSRF protection
+- Request scopes: `email`, `profile`
+
+**Response:**
+```
+HTTP 302 Redirect
+Location: https://accounts.google.com/o/oauth2/v2/auth?
+  client_id=YOUR_CLIENT_ID&
+  redirect_uri=http://localhost:8000/auth/callback&
+  response_type=code&
+  scope=email profile&
+  state=random-state-token&
+  access_type=offline
+```
+
+### GET `/auth/callback`
+รับ OAuth callback จาก Google
+
+**Query Parameters:**
+- `code`: Authorization code from Google
+- `state`: State parameter for CSRF verification
+
+**Success Response (Redirect):**
+```
+HTTP 302 Redirect
+Location: /dashboard
+Set-Cookie: session=signed-session-token; HttpOnly; Secure; SameSite=Lax
+```
+
+**Error Response (Unauthorized User):**
+```html
+HTTP 403 Forbidden
+
+<!DOCTYPE html>
+<html>
+<head><title>Unauthorized</title></head>
+<body>
+  <h1>Unauthorized Access</h1>
+  <p>Your email is not registered in the system. Please contact the administrator.</p>
+  <a href="/auth/login">Try Again</a>
+</body>
+</html>
+```
+
+**Error Response (OAuth Error):**
+```html
+HTTP 400 Bad Request
+
+<!DOCTYPE html>
+<html>
+<head><title>Authentication Failed</title></head>
+<body>
+  <h1>Authentication Failed</h1>
+  <p>Unable to authenticate with Google. Please try again.</p>
+  <a href="/auth/login">Back to Login</a>
+</body>
+</html>
+```
+
+### POST `/auth/logout`
+ออกจากระบบ
+
+**Response:**
+```
+HTTP 302 Redirect
+Location: /login
+Set-Cookie: session=; Max-Age=0
+```
+
+**JSON Response (if Accept: application/json):**
+```json
+{
+  "success": true,
+  "message": "Logged out successfully"
+}
+```
+
+### GET `/auth/me`
+ดึงข้อมูลผู้ใช้ปัจจุบัน (current user)
+
+**Authentication Required:** Yes (session cookie)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": "uuid-123",
+    "email": "john@example.com",
+    "name": "John Doe",
+    "user_level": "editor",
+    "teams": [
+      {
+        "team_name": "legal",
+        "role": "editor"
+      },
+      {
+        "team_name": "new_branch",
+        "role": "viewer"
+      }
+    ],
+    "permissions": {
+      "can_access_admin": false,
+      "can_manage_users": false,
+      "accessible_teams": ["legal", "new_branch"]
+    },
+    "last_login": "2024-03-25T14:30:00Z"
+  }
+}
+```
+
+**Error Response (Not Authenticated):**
+```json
+{
+  "success": false,
+  "error": "Not authenticated",
+  "message": "Please login to continue",
+  "code": "AUTHENTICATION_REQUIRED"
+}
+```
+
+### Session Cookie Format
+
+**Cookie Name:** `session`
+
+**Cookie Attributes:**
+- **HttpOnly**: true (ป้องกัน JavaScript access)
+- **Secure**: true (HTTPS only in production)
+- **SameSite**: Lax (ป้องกัน CSRF)
+- **Max-Age**: 86400 (24 hours)
+- **Path**: /
+
+**Session Data (encrypted):**
+```json
+{
+  "user_id": "uuid-123",
+  "email": "john@example.com",
+  "name": "John Doe",
+  "user_level": "editor",
+  "teams": ["legal", "new_branch"],
+  "iat": 1711372800,
+  "exp": 1711459200
+}
+```
+
+## Security Best Practices
+
+### CSRF Protection
+- ใช้ `state` parameter ใน OAuth flow
+- ตรวจสอบ state token ที่ callback endpoint
+- ใช้ SameSite cookie attribute
+
+### Session Security
+- Session token ถูก sign ด้วย SECRET_KEY
+- ตรวจสอบ signature ทุก request
+- Session timeout 24 ชั่วโมง
+- ห้าม decode session ใน client-side JavaScript
+
+### Token Handling
+- **ห้าม** เก็บ access token ใน cookie หรือ localStorage
+- Exchange token ที่ backend เท่านั้น
+- (Optional) เก็บ refresh token ใน secure database ถ้าต้องการ offline access
+
+### Error Handling
+- **ห้าม** แสดง error details ที่เป็นความลับ
+- Log errors ที่ backend สำหรับ debugging
+- แสดง generic error message ให้ user
+
 ## Related Documentation
 
 - [../DATABASE.md](../DATABASE.md) - Users table schema

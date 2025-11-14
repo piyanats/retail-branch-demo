@@ -126,6 +126,196 @@ Admin ต้องการตรวจสอบว่า:
    → กรองด้วย action = "permission_add", target_user_id
 ```
 
+## API Endpoints
+
+### GET `/api/admin/audit-logs`
+ดึงรายการ audit logs
+
+**Query Parameters:**
+- `page` (optional): หมายเลขหน้า (default: 1)
+- `limit` (optional): จำนวนรายการต่อหน้า (default: 50, max: 100)
+- `user_id` (optional): กรองตามผู้ใช้
+- `user_email` (optional): กรองตามอีเมลผู้ใช้
+- `action_type` (optional): กรองตาม action (login, create, update, delete, etc.)
+- `resource_type` (optional): กรองตาม resource (branch, document, user, permission, ppp09, ppp20, srd_layout, scm_dc, new_branch)
+- `resource_id` (optional): กรองตาม resource ID เฉพาะ
+- `status` (optional): กรองตาม status (success, failed)
+- `date_from` (optional): กรองตั้งแต่วันที่ (format: YYYY-MM-DD)
+- `date_to` (optional): กรองถึงวันที่ (format: YYYY-MM-DD)
+- `search` (optional): ค้นหาจาก email, resource_id, action_detail
+- `sort` (optional): เรียงลำดับ (created_at, user_email, action_type) ใช้ - สำหรับ descending (default: -created_at)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "log_id": "uuid-log-123",
+      "user_id": "uuid-user-456",
+      "user_email": "john@example.com",
+      "action_type": "ppp09_update",
+      "resource_type": "ppp09",
+      "resource_id": "PPP09-001",
+      "action_detail": {
+        "ppp09_id": "PPP09-001",
+        "branch_id": "BR001",
+        "changes": {
+          "branch_status": {
+            "old": "ยังไม่จดสรรพากร",
+            "new": "เปิดให้บริการ"
+          }
+        }
+      },
+      "ip_address": "203.154.123.45",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)...",
+      "status": "success",
+      "error_message": null,
+      "created_at": "2024-03-25T14:30:15Z"
+    },
+    {
+      "log_id": "uuid-log-124",
+      "user_id": "uuid-user-789",
+      "user_email": "admin@example.com",
+      "action_type": "permission_add",
+      "resource_type": "permission",
+      "resource_id": "uuid-perm-999",
+      "action_detail": {
+        "target_user_id": "uuid-user-456",
+        "target_user_email": "john@example.com",
+        "team_name": "legal",
+        "role": "editor"
+      },
+      "ip_address": "203.154.123.50",
+      "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...",
+      "status": "success",
+      "error_message": null,
+      "created_at": "2024-03-25T10:15:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 1523,
+    "total_pages": 31
+  }
+}
+```
+
+### GET `/api/admin/audit-logs/{log_id}`
+ดึงรายละเอียด audit log เฉพาะรายการ
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "log_id": "uuid-log-123",
+    "user_id": "uuid-user-456",
+    "user_email": "john@example.com",
+    "user_name": "John Doe",
+    "action_type": "new_branch_status_change",
+    "resource_type": "new_branch",
+    "resource_id": "BR005",
+    "action_detail": {
+      "branch_id": "BR005",
+      "branch_name": "สาขาสยาม",
+      "status_change": {
+        "from": "ก่อสร้าง",
+        "to": "เปิดทำการ"
+      },
+      "actual_opening_date": "2024-03-25"
+    },
+    "ip_address": "203.154.123.45",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "status": "success",
+    "error_message": null,
+    "created_at": "2024-03-25T14:30:15Z"
+  }
+}
+```
+
+### GET `/api/admin/audit-logs/export`
+Export audit logs เป็น CSV
+
+**Query Parameters:** (เหมือนกับ GET `/api/admin/audit-logs`)
+
+**Response:** CSV file download
+```
+Content-Type: text/csv
+Content-Disposition: attachment; filename="audit_logs_2024-03-25.csv"
+
+log_id,timestamp,user_email,action_type,resource_type,resource_id,status,ip_address
+uuid-log-123,2024-03-25T14:30:15Z,john@example.com,ppp09_update,ppp09,PPP09-001,success,203.154.123.45
+...
+```
+
+### GET `/api/admin/audit-logs/stats`
+สรุปสถิติ audit logs
+
+**Query Parameters:**
+- `date_from` (optional): วันที่เริ่มต้น
+- `date_to` (optional): วันที่สิ้นสุด
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "total_logs": 1523,
+    "date_range": {
+      "from": "2024-03-01",
+      "to": "2024-03-25"
+    },
+    "by_action_type": {
+      "login": 345,
+      "ppp09_update": 123,
+      "new_branch_create": 45,
+      "permission_add": 23,
+      "document_upload": 234
+    },
+    "by_resource_type": {
+      "ppp09": 156,
+      "ppp20": 89,
+      "new_branch": 67,
+      "srd_layout": 45,
+      "scm_dc": 34
+    },
+    "by_user": [
+      {
+        "user_email": "admin@example.com",
+        "count": 456
+      },
+      {
+        "user_email": "john@example.com",
+        "count": 234
+      }
+    ],
+    "by_status": {
+      "success": 1500,
+      "failed": 23
+    }
+  }
+}
+```
+
+### Authentication Required
+**ทุก API endpoint ต้องมี authentication และเฉพาะ Admin เท่านั้นที่เข้าถึงได้**
+
+**Error Response (Unauthorized):**
+```json
+{
+  "success": false,
+  "error": "Unauthorized",
+  "message": "Admin access required",
+  "code": "UNAUTHORIZED"
+}
+```
+
+### API Rate Limiting
+- **Default**: 100 requests per minute per user
+- **Export endpoint**: 5 requests per minute per user
+
 ## Related Documentation
 
 - [../DATABASE.md](../DATABASE.md) - Audit logs table schema
