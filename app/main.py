@@ -114,6 +114,37 @@ async def dashboard(request: Request):
         }
     )
 
+# Admin pages (requires admin access)
+@app.get("/admin/users")
+async def admin_users_page(request: Request):
+    """
+    Admin user management page
+
+    Requires admin access
+    """
+    from app.middleware.session import get_session_user
+
+    user = get_session_user(request)
+
+    if not user:
+        return RedirectResponse(url="/login")
+
+    # Check if user is admin
+    if user.get('user_level') != 'admin':
+        return templates.TemplateResponse(
+            "unauthorized.html",
+            {"request": request, "message": "You need admin access to view this page"}
+        )
+
+    return templates.TemplateResponse(
+        "admin/users.html",
+        {
+            "request": request,
+            "user": user,
+            "csrf_token": secrets.token_urlsafe(32)
+        }
+    )
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
@@ -162,6 +193,7 @@ async def shutdown_event():
     print("=" * 50)
 
 # Include routers
-from app.routes import auth_routes
+from app.routes import auth_routes, admin_routes
 
 app.include_router(auth_routes.router)
+app.include_router(admin_routes.router)
