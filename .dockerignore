@@ -1,0 +1,67 @@
+# .dockerignore
+# Files to exclude from Docker build context
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.eggs
+.pytest_cache
+.mypy_cache
+.coverage
+htmlcov/
+
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# Tests
+tests/
+test_*.py
+
+# CI/CD
+.gitlab-ci.yml
+.github/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+npm-debug.log
+
+# Tailwind
+static/css/input.css
+
+# Misc
+.DS_Store
+*.log
+tmp/
+temp/

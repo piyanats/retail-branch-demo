@@ -1,0 +1,63 @@
+# requirements.txt
+# Python dependencies for Retail Branch Management System
+
+# ============================================================================
+# Web Framework
+# ============================================================================
+fastapi==0.121.1                # Modern async web framework
+uvicorn[standard]==0.38.0       # ASGI server for production
+python-multipart==0.0.9         # For file uploads
+
+# ============================================================================
+# Template Engine
+# ============================================================================
+jinja2==3.1.6                   # Template engine for HTML
+
+# ============================================================================
+# Authentication
+# ============================================================================
+authlib==1.6.5                  # OAuth client library
+itsdangerous==2.2.0             # Secure session management
+httpx==0.27.0                   # HTTP client for OAuth (required by authlib)
+
+# ============================================================================
+# Google Cloud Platform
+# ============================================================================
+google-cloud-bigquery==3.38.0   # BigQuery client
+google-cloud-storage==3.5.0     # GCS client
+google-cloud-secret-manager==2.22.0  # Secret Manager
+
+# ============================================================================
+# Email Service
+# ============================================================================
+sendgrid==6.13.0                # SendGrid email service
+
+# ============================================================================
+# Data Validation
+# ============================================================================
+pydantic==2.10.7                # Data validation with type hints
+email-validator==2.2.0          # Email validation
+
+# ============================================================================
+# Utilities
+# ============================================================================
+python-dotenv==1.2.1            # Environment variables from .env
+python-magic==0.4.27            # File type detection (MIME)
+
+# ============================================================================
+# Security
+# ============================================================================
+bleach==6.2.0                   # HTML sanitization
+
+# ============================================================================
+# Testing
+# ============================================================================
+pytest==9.0.1                   # Testing framework
+pytest-asyncio==0.25.2          # Async tests
+
+# ============================================================================
+# Development Tools
+# ============================================================================
+black==25.1.0                   # Code formatter
+flake8==7.1.1                   # Code linter
+mypy==1.15.0                    # Static type checker
