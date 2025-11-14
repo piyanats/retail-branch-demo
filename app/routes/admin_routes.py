@@ -45,10 +45,10 @@ async def list_users(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     search: Optional[str] = Query(None, max_length=100, description="Search by email or name"),
-    user_level: Optional[str] = Query(None, regex="^(admin|manager|editor|viewer)$", description="Filter by user level"),
-    status: Optional[str] = Query(None, regex="^(active|inactive)$", description="Filter by status"),
+    user_level: Optional[str] = Query(None, pattern="^(admin|manager|editor|viewer)$", description="Filter by user level"),
+    status: Optional[str] = Query(None, pattern="^(active|inactive)$", description="Filter by status"),
     sort: Optional[str] = Query("created_at", description="Sort field"),
-    order: Optional[str] = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    order: Optional[str] = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
     current_user: dict = Depends(get_current_admin_user)
 ):
     """
@@ -255,8 +255,8 @@ async def get_user_teams(
 async def add_user_to_team(
     request: Request,
     user_id: str,
-    team_name: str = Query(..., regex="^(new_branch|legal|srd|scm)$", description="Team name"),
-    role: str = Query(..., regex="^(viewer|editor|manager)$", description="Role in team"),
+    team_name: str = Query(..., pattern="^(new_branch|legal|srd|scm)$", description="Team name"),
+    role: str = Query(..., pattern="^(viewer|editor|manager)$", description="Role in team"),
     current_user: dict = Depends(get_current_admin_user)
 ):
     """
@@ -293,7 +293,7 @@ async def add_user_to_team(
 async def update_user_team_role(
     request: Request,
     user_team_id: str,
-    role: str = Query(..., regex="^(viewer|editor|manager)$", description="New role"),
+    role: str = Query(..., pattern="^(viewer|editor|manager)$", description="New role"),
     current_user: dict = Depends(get_current_admin_user)
 ):
     """

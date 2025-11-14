@@ -13,7 +13,7 @@ class UserBase(BaseModel):
     """Base user model with common fields"""
     email: EmailStr
     name: str = Field(..., min_length=2, max_length=100)
-    user_level: str = Field(..., regex="^(admin|manager|editor|viewer)$")
+    user_level: str = Field(..., pattern="^(admin|manager|editor|viewer)$")
 
     @validator('name')
     def sanitize_name(cls, v):
@@ -31,7 +31,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     """Model for updating user"""
     name: Optional[str] = Field(None, min_length=2, max_length=100)
-    user_level: Optional[str] = Field(None, regex="^(admin|manager|editor|viewer)$")
+    user_level: Optional[str] = Field(None, pattern="^(admin|manager|editor|viewer)$")
     is_active: Optional[bool] = None
 
     @validator('name')
@@ -68,8 +68,8 @@ class UserDetailResponse(UserResponse):
 
 class UserTeamBase(BaseModel):
     """Base user team model"""
-    team_name: str = Field(..., regex="^(new_branch|legal|srd|scm)$")
-    role: str = Field(..., regex="^(viewer|editor|manager)$")
+    team_name: str = Field(..., pattern="^(new_branch|legal|srd|scm)$")
+    role: str = Field(..., pattern="^(viewer|editor|manager)$")
 
 class UserTeamCreate(UserTeamBase):
     """Model for adding user to team"""
@@ -77,7 +77,7 @@ class UserTeamCreate(UserTeamBase):
 
 class UserTeamUpdate(BaseModel):
     """Model for updating user team role"""
-    role: str = Field(..., regex="^(viewer|editor|manager)$")
+    role: str = Field(..., pattern="^(viewer|editor|manager)$")
 
 class UserTeamResponse(BaseModel):
     """User team response model"""
@@ -115,10 +115,10 @@ class PaginatedResponse(BaseModel):
 class UserFilter(BaseModel):
     """User filter parameters"""
     search: Optional[str] = Field(None, max_length=100, description="Search by email or name")
-    user_level: Optional[str] = Field(None, regex="^(admin|manager|editor|viewer)$")
-    status: Optional[str] = Field(None, regex="^(active|inactive)$")
+    user_level: Optional[str] = Field(None, pattern="^(admin|manager|editor|viewer)$")
+    status: Optional[str] = Field(None, pattern="^(active|inactive)$")
     sort: Optional[str] = Field("created_at", description="Sort field")
-    order: Optional[str] = Field("desc", regex="^(asc|desc)$", description="Sort order")
+    order: Optional[str] = Field("desc", pattern="^(asc|desc)$", description="Sort order")
 
     @validator('search')
     def sanitize_search(cls, v):
