@@ -77,6 +77,32 @@ async def login_page(request: Request):
         {"request": request, "csrf_token": secrets.token_urlsafe(32)}
     )
 
+# Dashboard (requires authentication)
+@app.get("/dashboard")
+async def dashboard(request: Request):
+    """
+    Main dashboard page
+
+    Requires authentication - redirect to appropriate team page
+    """
+    from app.middleware.session import get_session_user
+
+    user = get_session_user(request)
+
+    if not user:
+        return RedirectResponse(url="/login")
+
+    # For now, show a simple dashboard
+    # Later, redirect based on user's teams
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {
+            "request": request,
+            "user": user,
+            "csrf_token": secrets.token_urlsafe(32)
+        }
+    )
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
@@ -116,6 +142,7 @@ async def shutdown_event():
     print("👋 Shutting down Retail Branch Management System")
     print("=" * 50)
 
-# Include routers (will be added in Phase 2)
-# from app.routes import auth_routes
-# app.include_router(auth_routes.router)
+# Include routers
+from app.routes import auth_routes
+
+app.include_router(auth_routes.router)
