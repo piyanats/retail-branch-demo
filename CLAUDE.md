@@ -8,6 +8,7 @@
 
 ### Core Features
 - **User Authentication (Google OAuth 2.0)**: ระบบ login เข้าใช้งานผ่าน Google Account โดยผู้ใช้ทุกคนต้อง login ก่อนเข้าใช้งานระบบ
+- **User Management & Permissions**: จัดการผู้ใช้และกำหนดสิทธิ์การเข้าถึงเมนูต่างๆ โดย user 1 คนสามารถเข้าถึงได้มากกว่า 1 เมนู
 - **CRUD Operations**: สามารถเพิ่ม แก้ไข และลบข้อมูลสาขาได้
 - **Multi-Team Access**: รองรับการเข้าใช้งานของหลายทีม โดยแต่ละทีมมีสิทธิ์และเห็นเมนูเฉพาะของตนเอง
 - **Branch Data Management**: จัดการข้อมูลสาขา เช่น รหัสสาขา, ชื่อสาขา, ที่อยู่
@@ -22,6 +23,19 @@
 | **ทีมกฎหมาย** | จัดการเอกสารทางกฎหมาย | เอกสารสัญญา, ใบอนุญาต, เอกสารกฎหมายของแต่ละสาขา |
 | **ทีม SRD** | จัดการเอกสาร layout | แปลนผัง, layout ร้าน, floor plan ของแต่ละสาขา |
 | **ทีม SCM** | จัดการข้อมูล DC | ข้อมูล Distribution Center ที่รับผิดชอบแต่ละสาขา |
+
+**หมายเหตุ:**
+- ผู้ใช้ 1 คนสามารถเป็นสมาชิกของหลายทีมได้ (Multi-Team Membership)
+- Admin สามารถกำหนดสิทธิ์ให้ user เข้าถึงเมนูต่างๆ ได้ผ่านหน้า User Management
+
+### User Levels
+
+| Level | สิทธิ์ | คำอธิบาย |
+|-------|-------|---------|
+| **Admin** | จัดการระบบทั้งหมด | จัดการ users, permissions, ทุก teams, ทุกข้อมูล |
+| **Manager** | จัดการทีมของตัวเอง | จัดการข้อมูลและ users ในทีมที่ตัวเองรับผิดชอบ |
+| **Editor** | แก้ไขข้อมูล | สามารถเพิ่ม แก้ไข ข้อมูลในทีมที่มีสิทธิ์ |
+| **Viewer** | ดูข้อมูลอย่างเดียว | ดูข้อมูลในทีมที่มีสิทธิ์ ไม่สามารถแก้ไขได้ |
 
 ## Tech Stack
 
@@ -83,17 +97,20 @@ retail-branch-demo/
 │   ├── models/                 # Data models with type hints
 │   │   ├── __init__.py
 │   │   ├── branch.py
-│   │   └── document.py
+│   │   ├── document.py
+│   │   └── user.py             # User model
 │   ├── services/               # Business logic
 │   │   ├── __init__.py
 │   │   ├── bigquery_service.py
 │   │   ├── storage_service.py
-│   │   └── oauth_service.py    # Google OAuth service
+│   │   ├── oauth_service.py    # Google OAuth service
+│   │   └── user_service.py     # User management service
 │   ├── routes/                 # API routes/endpoints
 │   │   ├── __init__.py
 │   │   ├── auth_routes.py      # OAuth routes
 │   │   ├── branch_routes.py
-│   │   └── document_routes.py
+│   │   ├── document_routes.py
+│   │   └── admin_routes.py     # Admin routes (user management)
 │   ├── middleware/             # Authentication & Authorization
 │   │   ├── __init__.py
 │   │   └── auth.py
@@ -101,6 +118,9 @@ retail-branch-demo/
 │       ├── base.html
 │       ├── index.html
 │       ├── login.html          # OAuth login page
+│       ├── admin/              # Admin pages
+│       │   ├── users.html      # User management page
+│       │   └── permissions.html # User permissions management
 │       └── teams/
 │           ├── new_branch.html
 │           ├── legal.html
@@ -174,16 +194,34 @@ CREATE TABLE retail_branches.documents (
 #### Table: `users`
 ```sql
 CREATE TABLE retail_branches.users (
-  user_id STRING NOT NULL,             -- รหัสผู้ใช้
-  email STRING NOT NULL,               -- อีเมล
-  name STRING NOT NULL,                -- ชื่อ
-  team STRING NOT NULL,                -- ทีมที่สังกัด
-  role STRING NOT NULL,                -- บทบาท (viewer, editor, admin)
+  user_id STRING NOT NULL,             -- รหัสผู้ใช้ (UUID)
+  email STRING NOT NULL,               -- อีเมล (unique)
+  name STRING NOT NULL,                -- ชื่อผู้ใช้
+  user_level STRING NOT NULL,          -- ระดับผู้ใช้ (admin, manager, editor, viewer)
   is_active BOOLEAN,                   -- สถานะการใช้งาน
   created_at TIMESTAMP,                -- วันที่สร้าง
+  updated_at TIMESTAMP,                -- วันที่แก้ไข
   last_login TIMESTAMP                 -- เข้าสู่ระบบล่าสุด
 );
 ```
+
+#### Table: `user_teams`
+```sql
+CREATE TABLE retail_branches.user_teams (
+  user_team_id STRING NOT NULL,       -- รหัสความสัมพันธ์ (UUID)
+  user_id STRING NOT NULL,             -- รหัสผู้ใช้
+  team_name STRING NOT NULL,           -- ชื่อทีม (new_branch, legal, srd, scm)
+  role STRING NOT NULL,                -- บทบาทในทีม (viewer, editor, manager)
+  created_at TIMESTAMP,                -- วันที่เพิ่ม
+  created_by STRING                    -- ผู้ที่เพิ่มสิทธิ์
+);
+```
+
+**หมายเหตุ Database Schema:**
+- User 1 คนสามารถมีหลาย records ใน `user_teams` (multi-team membership)
+- `users.user_level` กำหนดสิทธิ์ระดับระบบ (admin สามารถทำทุกอย่าง)
+- `user_teams.role` กำหนดสิทธิ์ในแต่ละทีม (viewer, editor, manager)
+- Admin สามารถจัดการ users และ permissions ผ่านหน้า Admin
 
 ## Design & UI/UX Guidelines
 
@@ -362,6 +400,136 @@ CREATE TABLE retail_branches.users (
 - Section highlights
 - Team badges/tags
 - Icons
+
+## User Management & Permissions
+
+### Overview
+
+ระบบมีหน้าจัดการผู้ใช้และสิทธิ์สำหรับ Admin ในการควบคุมการเข้าถึงของผู้ใช้แต่ละคน โดยผู้ใช้ 1 คนสามารถเข้าถึงได้มากกว่า 1 ทีม/เมนู
+
+### User Management Page (`/admin/users`)
+
+**สิทธิ์การเข้าถึง:** เฉพาะ Admin เท่านั้น
+
+**ฟีเจอร์:**
+- **รายการผู้ใช้ทั้งหมด**: แสดงตารางผู้ใช้พร้อม email, name, user level, status
+- **ค้นหาผู้ใช้**: ค้นหาด้วย email หรือ name
+- **กรองผู้ใช้**: กรองตาม user level (admin, manager, editor, viewer) หรือ status (active/inactive)
+- **เพิ่มผู้ใช้ใหม่**: เพิ่ม user ใหม่ (กรอก email, name, เลือก user level)
+- **แก้ไขผู้ใช้**: แก้ไข name, user level, status
+- **ลบผู้ใช้**: ปิดการใช้งาน (soft delete โดยตั้ง is_active = false)
+
+**UI Components:**
+- ตาราง users พร้อม pagination
+- ปุ่ม "Add User" (primary button, มุมขวาบน)
+- Search box และ filter dropdowns
+- Actions column: Edit, Deactivate/Activate buttons
+- Modal สำหรับเพิ่ม/แก้ไข user
+
+**ข้อมูลที่แสดง:**
+| Column | Description |
+|--------|-------------|
+| Email | อีเมลผู้ใช้ |
+| Name | ชื่อผู้ใช้ |
+| User Level | admin / manager / editor / viewer |
+| Teams | จำนวนทีมที่สังกัด (clickable เพื่อดู details) |
+| Status | Active / Inactive |
+| Last Login | เข้าสู่ระบบล่าสุด |
+| Actions | Edit / Deactivate buttons |
+
+### User Permissions Page (`/admin/permissions`)
+
+**สิทธิ์การเข้าถึง:** เฉพาะ Admin เท่านั้น
+
+**ฟีเจอร์:**
+- **เลือกผู้ใช้**: Dropdown หรือ autocomplete สำหรับเลือก user
+- **แสดงทีมปัจจุบัน**: แสดง teams ที่ user มีสิทธิ์เข้าถึง
+- **เพิ่มสิทธิ์เข้าทีม**: เลือกทีมและ role (viewer/editor/manager) แล้วเพิ่ม
+- **แก้ไขสิทธิ์**: เปลี่ยน role ในแต่ละทีม
+- **ลบสิทธิ์**: ลบสิทธิ์ออกจากทีม
+
+**UI Layout:**
+
+```
+┌──────────────────────────────────────────┐
+│  User Permissions Management             │
+├──────────────────────────────────────────┤
+│  Select User: [Dropdown/Autocomplete]    │
+├──────────────────────────────────────────┤
+│  Current Permissions:                     │
+│  ┌────────────────────────────────────┐  │
+│  │ Team        │ Role    │ Actions   │  │
+│  ├────────────────────────────────────┤  │
+│  │ New Branch  │ Editor  │ [Edit][X] │  │
+│  │ Legal       │ Viewer  │ [Edit][X] │  │
+│  │ SRD         │ Manager │ [Edit][X] │  │
+│  └────────────────────────────────────┘  │
+├──────────────────────────────────────────┤
+│  Add New Permission:                      │
+│  Team: [Dropdown]   Role: [Dropdown]     │
+│  [Add Permission Button]                  │
+└──────────────────────────────────────────┘
+```
+
+**Workflow:**
+1. Admin เลือก user จาก dropdown
+2. ระบบแสดงทีมและ role ที่ user มีสิทธิ์
+3. Admin สามารถ:
+   - เพิ่มสิทธิ์ใหม่ (เลือกทีม + role)
+   - แก้ไข role ในทีมที่มีอยู่
+   - ลบสิทธิ์ออกจากทีม
+4. บันทึกการเปลี่ยนแปลงลง BigQuery
+
+### Permission Logic
+
+**การตรวจสอบสิทธิ์:**
+1. ตรวจสอบ `user_level` จาก `users` table
+   - ถ้าเป็น `admin` → อนุญาตให้เข้าถึงทุกอย่าง
+2. ตรวจสอบ `user_teams` table
+   - ดึง teams ที่ user มีสิทธิ์
+   - ตรวจสอบ role ในแต่ละทีม
+3. แสดงเฉพาะเมนูที่ user มีสิทธิ์
+
+**ตัวอย่าง:**
+```
+User: john@example.com
+user_level: editor
+
+user_teams:
+- team_name: new_branch, role: editor
+- team_name: legal, role: viewer
+
+→ john สามารถ:
+  - เข้าเมนู New Branch (แก้ไขได้)
+  - เข้าเมนู Legal (ดูอย่างเดียว)
+  - ไม่เห็นเมนู SRD และ SCM
+```
+
+### User Level Permissions
+
+| User Level | Permissions |
+|-----------|-------------|
+| **Admin** | - เข้าถึงทุก teams และทุกเมนู<br>- จัดการ users<br>- กำหนดสิทธิ์<br>- ดู/แก้ไข/ลบข้อมูลทั้งหมด |
+| **Manager** | - เข้าถึง teams ที่มีสิทธิ์<br>- จัดการข้อมูลในทีมของตัวเอง<br>- ไม่สามารถจัดการ users ได้ |
+| **Editor** | - เข้าถึง teams ที่มีสิทธิ์<br>- เพิ่ม/แก้ไขข้อมูล<br>- ไม่สามารถลบข้อมูล |
+| **Viewer** | - เข้าถึง teams ที่มีสิทธิ์<br>- ดูข้อมูลอย่างเดียว<br>- ไม่สามารถแก้ไขหรือลบ |
+
+### Navigation for Admin
+
+Admin จะเห็นเมนูเพิ่มเติม:
+- **Users**: จัดการผู้ใช้
+- **Permissions**: กำหนดสิทธิ์ผู้ใช้
+- **All Teams**: เข้าถึงทุกทีม (New Branch, Legal, SRD, SCM)
+
+**Admin Navbar Example:**
+```
+[Logo] | Dashboard | Users | Permissions | Teams ▼ | [User Avatar ▼]
+                                          |
+                                          ├── New Branch
+                                          ├── Legal
+                                          ├── SRD
+                                          └── SCM
+```
 
 ## User Authentication (Google OAuth 2.0)
 
