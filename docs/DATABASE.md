@@ -161,6 +161,87 @@ CREATE TABLE retail_branches.legal_documents (
 );
 ```
 
+### Table: `srd_layout`
+
+ตารางเก็บข้อมูล Layout และรูปแบบสาขา สำหรับทีม SRD
+
+```sql
+CREATE TABLE retail_branches.srd_layout (
+  layout_id STRING NOT NULL,               -- รหัส Layout (UUID)
+  branch_id STRING NOT NULL,               -- รหัสสาขา (FK -> branches.branch_id)
+
+  -- ข้อมูล Layout
+  assortment_type STRING NOT NULL,         -- ประเภทการจัดสินค้า (มาตรฐาน, เมือง)
+  format STRING NOT NULL,                  -- รูปแบบร้าน (Supermarket, Mall, โรงโป๊ะ)
+  last_renovate_date DATE,                 -- วันที่ Renovate ล่าสุด
+
+  -- Flags
+  alc_flag BOOLEAN NOT NULL,               -- ขายแอลกอฮอล์ได้หรือไม่
+  halan_flag BOOLEAN NOT NULL,             -- มี Halan Flag หรือไม่
+
+  -- หมายเหตุ
+  remarks STRING,                          -- หมายเหตุเพิ่มเติม
+
+  -- Metadata
+  created_at TIMESTAMP,                    -- วันที่สร้างข้อมูล
+  updated_at TIMESTAMP,                    -- วันที่แก้ไขล่าสุด
+  created_by STRING,                       -- ผู้สร้าง
+  updated_by STRING                        -- ผู้แก้ไข
+);
+```
+
+### Table: `scm_dc_assignment`
+
+ตาราง master สำหรับเก็บ DC ปัจจุบันของแต่ละสาขา สำหรับทีม SCM
+
+```sql
+CREATE TABLE retail_branches.scm_dc_assignment (
+  assignment_id STRING NOT NULL,           -- รหัส Assignment (UUID)
+  branch_id STRING NOT NULL,               -- รหัสสาขา (FK -> branches.branch_id) UNIQUE
+
+  -- DC Information
+  current_dc STRING NOT NULL,              -- DC ปัจจุบัน (DC1, DC2, DC4)
+
+  -- Metadata
+  created_at TIMESTAMP,                    -- วันที่สร้างข้อมูล
+  updated_at TIMESTAMP,                    -- วันที่แก้ไขล่าสุด
+  created_by STRING,                       -- ผู้สร้าง
+  updated_by STRING                        -- ผู้แก้ไข
+);
+```
+
+### Table: `scm_dc_schedule`
+
+ตารางเก็บกำหนดการเปลี่ยน DC ในอนาคต สำหรับทีม SCM
+
+```sql
+CREATE TABLE retail_branches.scm_dc_schedule (
+  schedule_id STRING NOT NULL,             -- รหัสกำหนดการ (UUID)
+  branch_id STRING NOT NULL,               -- รหัสสาขา (FK -> branches.branch_id)
+
+  -- DC Change Information
+  from_dc STRING NOT NULL,                 -- DC เดิม (DC1, DC2, DC4)
+  to_dc STRING NOT NULL,                   -- DC ใหม่ (DC1, DC2, DC4)
+  effective_date DATE NOT NULL,            -- วันที่มีผล
+
+  -- Details
+  reason STRING NOT NULL,                  -- เหตุผลในการเปลี่ยน DC
+  remarks STRING,                          -- หมายเหตุเพิ่มเติม
+
+  -- Status
+  status STRING NOT NULL,                  -- สถานะ (scheduled, completed, cancelled)
+
+  -- Metadata
+  created_at TIMESTAMP,                    -- วันที่สร้างกำหนดการ
+  updated_at TIMESTAMP,                    -- วันที่แก้ไข
+  created_by STRING,                       -- ผู้สร้าง
+  updated_by STRING,                       -- ผู้แก้ไข
+  completed_at TIMESTAMP,                  -- วันที่ทำการเปลี่ยนเสร็จ (auto)
+  cancelled_at TIMESTAMP,                  -- วันที่ยกเลิก
+  cancelled_by STRING                      -- ผู้ยกเลิก
+);
+```
+
 ### Table: `audit_logs`
 
 ตารางเก็บบันทึก activity ทั้งหมดของ user
@@ -197,6 +278,15 @@ CREATE TABLE retail_branches.audit_logs (
 - **ที่อยู่ใน `legal_ppp09`** แยกเป็น fields เพื่อให้ค้นหาและจัดการได้ง่าย
 - **`legal_ppp09.ppp09_number`** เป็น unique per branch (เลขที่ตามสรรพากร)
 - **สถานะของสาขา** ใน `legal_ppp09`: ยังไม่จดสรรพากร, เปิดให้บริการ, รอเปิดทำการ
+- **`srd_layout`** เก็บข้อมูล Layout และรูปแบบสาขา (Assortment Type, Format, Flags) สำหรับทีม SRD
+- **`srd_layout.branch_id`** เชื่อมโยงกับ `branches.branch_id` (1 สาขา : 1 Layout)
+- **Assortment Type** ใน `srd_layout`: มาตรฐาน, เมือง
+- **Format** ใน `srd_layout`: Supermarket, Mall, โรงโป๊ะ
+- **`scm_dc_assignment`** เก็บ DC ปัจจุบันของแต่ละสาขา (master table) สำหรับทีม SCM
+- **`scm_dc_schedule`** เก็บกำหนดการเปลี่ยน DC ในอนาคต สำหรับทีม SCM
+- **`scm_dc_assignment.branch_id`** เป็น unique (1 สาขา : 1 DC ปัจจุบัน)
+- **`scm_dc_schedule`** รองรับการเปลี่ยน DC แบบกำหนดวันที่มีผลล่วงหน้า
+- **DC Options**: DC1, DC2, DC4
 
 ## Performance Optimization
 
@@ -205,12 +295,17 @@ CREATE TABLE retail_branches.audit_logs (
 - **`legal_ppp09`** - Partition โดย `DATE(created_at)` (รายวัน)
 - **`legal_ppp20`** - Partition โดย `DATE(created_at)` (รายวัน)
 - **`legal_documents`** - Partition โดย `DATE(uploaded_at)` (รายวัน)
+- **`srd_layout`** - Partition โดย `DATE(created_at)` (รายวัน)
+- **`scm_dc_schedule`** - Partition โดย `DATE(effective_date)` (รายวัน)
 
 ### Clustering
 - **`audit_logs`** - Cluster โดย `user_id` และ `action_type`
 - **`legal_ppp09`** - Cluster โดย `branch_id` และ `branch_status`
 - **`legal_ppp20`** - Cluster โดย `branch_id` และ `tax_period`
 - **`legal_documents`** - Cluster โดย `document_type` และ `branch_id`
+- **`srd_layout`** - Cluster โดย `branch_id`, `assortment_type`, และ `format`
+- **`scm_dc_assignment`** - Cluster โดย `branch_id` และ `current_dc`
+- **`scm_dc_schedule`** - Cluster โดย `branch_id`, `status`, และ `effective_date`
 
 ### Indexing Recommendations
 - เนื่องจาก BigQuery ไม่มี traditional indexes แต่ใช้ partitioning และ clustering แทน
@@ -225,4 +320,6 @@ CREATE TABLE retail_branches.audit_logs (
 
 - [features/user-management.md](features/user-management.md) - User & permissions management
 - [features/audit-logs.md](features/audit-logs.md) - Audit logs details
-- [features/legal-ppp09.md](features/legal-ppp09.md) - Legal ภ.พ.09 management
+- [features/legal-ppp09.md](features/legal-ppp09.md) - Legal Team (ภ.พ.09 & ภ.พ.20) management
+- [features/srd-layout.md](features/srd-layout.md) - SRD Team Layout management
+- [features/scm-dc.md](features/scm-dc.md) - SCM Team DC management
