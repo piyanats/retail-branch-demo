@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings
 import secrets
 
@@ -43,6 +44,16 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Session middleware (required for OAuth)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SESSION_SECRET,
+    session_cookie="oauth_session",
+    max_age=600,  # 10 minutes for OAuth flow
+    same_site="lax",
+    https_only=not settings.is_development
 )
 
 # Security headers middleware
@@ -133,6 +144,14 @@ async def startup_event():
         except ValueError as e:
             print(f"❌ Configuration error: {e}")
             raise
+    else:
+        # Development warnings
+        if settings.SESSION_SECRET.startswith("dev-secret"):
+            print("⚠️  WARNING: Using default SESSION_SECRET. Set a custom one in .env for security!")
+        if not settings.PROJECT_ID:
+            print("⚠️  WARNING: PROJECT_ID not set. BigQuery and GCS will not work.")
+        if not settings.GOOGLE_CLIENT_ID:
+            print("⚠️  WARNING: GOOGLE_CLIENT_ID not set. OAuth login will not work.")
 
 # Shutdown event
 @app.on_event("shutdown")

@@ -32,7 +32,10 @@ class Settings:
     # ========================================================================
     # Session Management
     # ========================================================================
-    SESSION_SECRET: str = os.getenv("SESSION_SECRET", "")
+    SESSION_SECRET: str = os.getenv(
+        "SESSION_SECRET",
+        "dev-secret-key-change-in-production-min-32-chars-long-12345678"  # Development fallback
+    )
     SESSION_MAX_AGE: int = int(os.getenv("SESSION_MAX_AGE", "86400"))
 
     # ========================================================================
