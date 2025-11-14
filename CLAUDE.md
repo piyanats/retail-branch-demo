@@ -20,7 +20,7 @@
 | ทีม | หน้าที่ | ข้อมูลที่เข้าถึง |
 |-----|---------|-----------------|
 | **ทีมสาขาใหม่** | จัดการข้อมูลการเปิดสาขาใหม่ | ข้อมูลสาขาที่กำลังเปิดใหม่, สถานะการเปิดสาขา, timeline |
-| **ทีมกฎหมาย** | จัดการเอกสารทางกฎหมาย | เอกสารสัญญา, ใบอนุญาต, เอกสารกฎหมายของแต่ละสาขา |
+| **ทีมกฎหมาย** | จัดการเอกสารทางกฎหมายและข้อมูล ภ.พ.09 | เอกสารสัญญา, ใบอนุญาต, ภ.พ.09 (แบบแจ้งการประเมินภาษีที่ดินและสิ่งปลูกสร้าง), เอกสารกฎหมายของแต่ละสาขา |
 | **ทีม SRD** | จัดการเอกสาร layout | แปลนผัง, layout ร้าน, floor plan ของแต่ละสาขา |
 | **ทีม SCM** | จัดการข้อมูล DC | ข้อมูล Distribution Center ที่รับผิดชอบแต่ละสาขา |
 
@@ -98,7 +98,8 @@ retail-branch-demo/
 │   │   ├── __init__.py
 │   │   ├── branch.py
 │   │   ├── document.py
-│   │   └── user.py             # User model
+│   │   ├── user.py             # User model
+│   │   └── legal_ppp09.py      # Legal PPP09 (ภ.พ.09) model
 │   ├── services/               # Business logic
 │   │   ├── __init__.py
 │   │   ├── bigquery_service.py
@@ -110,7 +111,8 @@ retail-branch-demo/
 │   │   ├── auth_routes.py      # OAuth routes
 │   │   ├── branch_routes.py
 │   │   ├── document_routes.py
-│   │   └── admin_routes.py     # Admin routes (user management)
+│   │   ├── admin_routes.py     # Admin routes (user management)
+│   │   └── legal_ppp09_routes.py # Legal ภ.พ.09 routes
 │   ├── middleware/             # Authentication & Authorization
 │   │   ├── __init__.py
 │   │   └── auth.py
@@ -124,6 +126,7 @@ retail-branch-demo/
 │       └── teams/
 │           ├── new_branch.html
 │           ├── legal.html
+│           ├── legal_ppp09.html # Legal ภ.พ.09 management page
 │           ├── srd.html
 │           └── scm.html
 ├── static/
@@ -217,6 +220,52 @@ CREATE TABLE retail_branches.user_teams (
 );
 ```
 
+#### Table: `legal_ppp09`
+```sql
+CREATE TABLE retail_branches.legal_ppp09 (
+  ppp09_id STRING NOT NULL,                -- รหัส ภ.พ.09 (UUID)
+  branch_id STRING NOT NULL,               -- รหัสสาขา (FK -> branches.branch_id)
+  ppp09_number STRING,                     -- เลขที่ ภ.พ.09
+  issue_date DATE,                         -- วันที่ออกเอกสาร
+  expiry_date DATE,                        -- วันหมดอายุ
+  owner_name STRING,                       -- ชื่อเจ้าของ/ผู้เสียภาษี
+
+  -- ที่อยู่ตาม ภ.พ.09 (แยกตาม field)
+  address_number STRING,                   -- บ้านเลขที่
+  address_moo STRING,                      -- หมู่ที่
+  address_trok STRING,                     -- ตรอก
+  address_soi STRING,                      -- ซอย
+  address_road STRING,                     -- ถนน
+  address_tambon STRING,                   -- ตำบล/แขวง
+  address_amphoe STRING,                   -- อำเภอ/เขต
+  address_province STRING,                 -- จังหวัด
+  address_postal_code STRING,              -- รหัสไปรษณีย์
+
+  -- ข้อมูลเพิ่มเติม
+  land_area_rai FLOAT64,                   -- เนื้อที่ดิน (ไร่)
+  land_area_ngan FLOAT64,                  -- เนื้อที่ดิน (งาน)
+  land_area_wa FLOAT64,                    -- เนื้อที่ดิน (ตารางวา)
+  building_area_sqm FLOAT64,              -- พื้นที่สิ่งปลูกสร้าง (ตร.ม.)
+  annual_tax_amount FLOAT64,              -- จำนวนเงินภาษีต่อปี (บาท)
+  payment_status STRING,                   -- สถานะการชำระ (paid, unpaid, overdue)
+
+  -- เอกสาร PDF
+  pdf_file_path STRING,                    -- path ใน GCS สำหรับ PDF ภ.พ.09
+  pdf_file_size INT64,                     -- ขนาดไฟล์ PDF (bytes)
+  pdf_uploaded_at TIMESTAMP,               -- วันที่อัพโหลด PDF
+  pdf_uploaded_by STRING,                  -- ผู้อัพโหลด PDF
+
+  -- หมายเหตุ
+  remarks STRING,                          -- หมายเหตุเพิ่มเติม
+
+  -- Metadata
+  created_at TIMESTAMP,                    -- วันที่สร้างข้อมูล
+  updated_at TIMESTAMP,                    -- วันที่แก้ไขล่าสุด
+  created_by STRING,                       -- ผู้สร้าง
+  updated_by STRING                        -- ผู้แก้ไข
+);
+```
+
 #### Table: `audit_logs`
 ```sql
 CREATE TABLE retail_branches.audit_logs (
@@ -224,7 +273,7 @@ CREATE TABLE retail_branches.audit_logs (
   user_id STRING NOT NULL,                 -- ผู้ใช้ที่ทำ action
   user_email STRING NOT NULL,              -- อีเมลผู้ใช้
   action_type STRING NOT NULL,             -- ประเภท action (login, create, update, delete, etc.)
-  resource_type STRING,                    -- ประเภททรัพยากร (branch, document, user, permission)
+  resource_type STRING,                    -- ประเภททรัพยากร (branch, document, user, permission, ppp09)
   resource_id STRING,                      -- รหัสทรัพยากรที่เกี่ยวข้อง
   action_detail STRING,                    -- รายละเอียด action (JSON format)
   ip_address STRING,                       -- IP address ของผู้ใช้
@@ -241,6 +290,9 @@ CREATE TABLE retail_branches.audit_logs (
 - `user_teams.role` กำหนดสิทธิ์ในแต่ละทีม (viewer, editor, manager)
 - Admin สามารถจัดการ users และ permissions ผ่านหน้า Admin
 - `audit_logs` เก็บบันทึก activity ทั้งหมดของ user รวมถึง admin
+- `legal_ppp09` เก็บข้อมูล ภ.พ.09 (แบบแจ้งการประเมินภาษีที่ดินและสิ่งปลูกสร้าง) สำหรับทีมกฎหมาย
+- `legal_ppp09.branch_id` เชื่อมโยงกับ `branches.branch_id` (1 สาขา สามารถมีได้ 1 ภ.พ.09 หรือมากกว่า ขึ้นอยู่กับการต่ออายุ)
+- ที่อยู่ใน `legal_ppp09` แยกเป็น fields เพื่อให้ค้นหาและจัดการได้ง่าย
 
 ## Design & UI/UX Guidelines
 
@@ -617,6 +669,14 @@ Admin จะเห็นเมนูเพิ่มเติม:
 - `permission_update` - แก้ไข role ของ user ในทีม
 - `permission_remove` - ลบสิทธิ์ user ออกจากทีม
 
+**Legal ภ.พ.09 Management Actions:**
+- `ppp09_create` - สร้างข้อมูล ภ.พ.09 ใหม่
+- `ppp09_update` - แก้ไขข้อมูล ภ.พ.09
+- `ppp09_delete` - ลบข้อมูล ภ.พ.09
+- `ppp09_pdf_upload` - อัพโหลด PDF เอกสาร ภ.พ.09
+- `ppp09_pdf_download` - ดาวน์โหลด PDF เอกสาร ภ.พ.09
+- `ppp09_pdf_delete` - ลบ PDF เอกสาร ภ.พ.09
+
 ### Action Detail Format (JSON)
 
 **ตัวอย่าง action_detail สำหรับแต่ละ action:**
@@ -654,6 +714,32 @@ Admin จะเห็นเมนูเพิ่มเติม:
   "branch_id": "BR001",
   "team": "legal"
 }
+
+// ppp09_update
+{
+  "ppp09_id": "PPP09-001",
+  "branch_id": "BR001",
+  "ppp09_number": "12345/2567",
+  "changes": {
+    "payment_status": {
+      "old": "unpaid",
+      "new": "paid"
+    },
+    "annual_tax_amount": {
+      "old": 15000.00,
+      "new": 16500.00
+    }
+  }
+}
+
+// ppp09_pdf_upload
+{
+  "ppp09_id": "PPP09-001",
+  "branch_id": "BR001",
+  "pdf_file_name": "ภพ09-สาขาสยาม-2567.pdf",
+  "file_size": 3145728,
+  "file_path": "gs://bucket/legal/ppp09/BR001_ppp09_2567.pdf"
+}
 ```
 
 ### Audit Log Retention
@@ -688,6 +774,198 @@ Admin ต้องการตรวจสอบว่า:
 4. ใครเป็นคนเพิ่มสิทธิ์ให้ user นี้?
    → กรองด้วย action = "permission_add", target_user_id
 ```
+
+## Legal ภ.พ.09 Management (สำหรับทีมกฎหมาย)
+
+### Overview
+
+ภ.พ.09 (ภาษีที่ดินและสิ่งปลูกสร้าง ภ.พ.๐๙) คือ แบบแจ้งการประเมินภาษีที่ดินและสิ่งปลูกสร้าง ซึ่งเป็นเอกสารสำคัญทางกฎหมายสำหรับการดำเนินธุรกิจค้าปลีก ทีมกฎหมายจะมีหน้าที่ในการจัดการข้อมูล ภ.พ.09 ของแต่ละสาขา พร้อมทั้งเก็บเอกสาร PDF ต้นฉบับ
+
+### Legal ภ.พ.09 Management Page (`/legal/ppp09`)
+
+**สิทธิ์การเข้าถึง:** ทีมกฎหมาย (Legal Team) และ Admin
+
+**ฟีเจอร์:**
+- **รายการ ภ.พ.09 ทั้งหมด**: แสดงตารางข้อมูล ภ.พ.09 ของทุกสาขา
+- **ค้นหา**: ค้นหาด้วย รหัสสาขา, เลขที่ ภ.พ.09, ชื่อเจ้าของ, ที่อยู่
+- **กรอง**: กรองตาม จังหวัด, สถานะการชำระภาษี, วันหมดอายุ
+- **เพิ่ม ภ.พ.09 ใหม่**: สร้างข้อมูล ภ.พ.09 ใหม่พร้อม upload PDF
+- **แก้ไข ภ.พ.09**: แก้ไขข้อมูลและอัพเดท PDF
+- **ลบ ภ.พ.09**: ลบข้อมูล (soft delete)
+- **ดาวน์โหลด PDF**: ดาวน์โหลดเอกสาร ภ.พ.09 ต้นฉบับ
+- **แจ้งเตือนหมดอายุ**: แจ้งเตือน ภ.พ.09 ที่ใกล้หมดอายุ (เช่น 30, 60, 90 วันก่อนหมดอายุ)
+
+**UI Components:**
+- ตาราง ภ.พ.09 พร้อม pagination
+- ปุ่ม "เพิ่ม ภ.พ.09 ใหม่" (primary button, มุมขวาบน)
+- Search box และ filter dropdowns
+- Actions column: View, Edit, Delete, Download PDF buttons
+- Modal สำหรับเพิ่ม/แก้ไข ภ.พ.09
+- Alert/Badge สำหรับ ภ.พ.09 ที่ใกล้หมดอายุ หรือค้างชำระภาษี
+
+**ข้อมูลที่แสดงในตาราง:**
+| Column | Description |
+|--------|-------------|
+| รหัสสาขา | รหัสสาขาที่เกี่ยวข้อง (clickable -> link to branch details) |
+| ชื่อสาขา | ชื่อสาขา |
+| เลขที่ ภ.พ.09 | เลขที่เอกสาร ภ.พ.09 |
+| ชื่อเจ้าของ | ชื่อผู้เสียภาษี |
+| ที่อยู่ | ที่อยู่ (แสดงแบบย่อ) |
+| วันที่ออก | วันที่ออกเอกสาร |
+| วันหมดอายุ | วันหมดอายุ (แสดง badge ถ้าใกล้หมดอายุ) |
+| ภาษีต่อปี | จำนวนเงินภาษีต่อปี (บาท) |
+| สถานะชำระ | paid / unpaid / overdue |
+| PDF | ไอคอน download (ถ้ามี PDF) |
+| Actions | View / Edit / Delete buttons |
+
+### Form: เพิ่ม/แก้ไข ภ.พ.09
+
+**ฟอร์มแบ่งเป็น 4 sections:**
+
+**1. ข้อมูลทั่วไป**
+- รหัสสาขา (Dropdown/Autocomplete)
+- เลขที่ ภ.พ.09 (Text input)
+- ชื่อเจ้าของ/ผู้เสียภาษี (Text input)
+- วันที่ออกเอกสาร (Date picker)
+- วันหมดอายุ (Date picker)
+
+**2. ที่อยู่ตาม ภ.พ.09 (แยกตาม field)**
+- บ้านเลขที่ (Text input)
+- หมู่ที่ (Text input)
+- ตรอก (Text input - optional)
+- ซอย (Text input - optional)
+- ถนน (Text input - optional)
+- ตำบล/แขวง (Text input)
+- อำเภอ/เขต (Text input)
+- จังหวัด (Dropdown - list of provinces)
+- รหัสไปรษณีย์ (Text input - 5 digits)
+
+**หมายเหตุ:** ที่อยู่ต้องแยกเป็น fields เพื่อให้ค้นหาและจัดการได้ง่าย
+
+**3. ข้อมูลเนื้อที่และภาษี**
+- เนื้อที่ดิน:
+  - ไร่ (Number input)
+  - งาน (Number input)
+  - ตารางวา (Number input)
+- พื้นที่สิ่งปลูกสร้าง (ตร.ม.) (Number input)
+- จำนวนเงินภาษีต่อปี (บาท) (Number input)
+- สถานะการชำระ (Dropdown: paid, unpaid, overdue)
+
+**4. เอกสาร PDF และหมายเหตุ**
+- อัพโหลด PDF ภ.พ.09 (File upload - accept PDF only, max 10MB)
+  - แสดง preview/thumbnail ถ้ามี PDF อยู่แล้ว
+  - ปุ่ม "Replace PDF" สำหรับเปลี่ยน PDF ใหม่
+  - ปุ่ม "Download PDF" สำหรับดาวน์โหลด
+  - ปุ่ม "Delete PDF" สำหรับลบ PDF
+- หมายเหตุ (Textarea - optional)
+
+**Validation:**
+- รหัสสาขา: required, ต้องมีในระบบ
+- เลขที่ ภ.พ.09: required
+- ชื่อเจ้าของ: required
+- วันที่ออกเอกสาร: required, ต้องไม่เกินวันนี้
+- วันหมดอายุ: ต้องมากกว่าวันที่ออกเอกสาร
+- ที่อยู่: บ้านเลขที่, ตำบล/แขวง, อำเภอ/เขต, จังหวัด, รหัสไปรษณีย์ = required
+- รหัสไปรษณีย์: ต้องเป็นตัวเลข 5 หัก
+- PDF: ถ้า upload ต้องเป็นไฟล์ PDF เท่านั้น, ขนาดไม่เกิน 10MB
+
+**Buttons:**
+- "บันทึก" (Primary button)
+- "ยกเลิก" (Secondary button)
+
+### UI/UX Considerations
+
+**Address Fields Layout (2-column responsive grid):**
+```
+┌──────────────────────────────────────────┐
+│ บ้านเลขที่         │ หมู่ที่             │
+├──────────────────────────────────────────┤
+│ ตรอก               │ ซอย                │
+├──────────────────────────────────────────┤
+│ ถนน                                      │
+├──────────────────────────────────────────┤
+│ ตำบล/แขวง         │ อำเภอ/เขต          │
+├──────────────────────────────────────────┤
+│ จังหวัด            │ รหัสไปรษณีย์        │
+└──────────────────────────────────────────┘
+```
+
+**Land Area Fields Layout (3-column):**
+```
+┌──────────────────────────────────────────┐
+│ เนื้อที่ดิน                               │
+│ ไร่      │ งาน      │ ตารางวา           │
+└──────────────────────────────────────────┘
+```
+
+**Status Badges:**
+- **Paid**: เขียว (Success Green)
+- **Unpaid**: ส้ม (Warning Orange)
+- **Overdue**: แดง (Error Red)
+
+**Expiry Alert:**
+- ภ.พ.09 ที่หมดอายุภายใน 30 วัน → แสดง Warning badge สีส้ม
+- ภ.พ.09 ที่หมดอายุแล้ว → แสดง Error badge สีแดง
+
+**PDF Upload:**
+- Drag & drop zone สำหรับ upload PDF
+- Progress bar ระหว่าง upload
+- Success message เมื่อ upload สำเร็จ
+- Error message ถ้า upload ล้มเหลว
+
+### API Endpoints
+
+**GET /api/legal/ppp09**
+- ดึงรายการ ภ.พ.09 ทั้งหมด
+- รองรับ pagination, search, filter
+- Response: List of PPP09 objects
+
+**GET /api/legal/ppp09/{ppp09_id}**
+- ดึงข้อมูล ภ.พ.09 รายการเดียว
+- Response: PPP09 object
+
+**POST /api/legal/ppp09**
+- สร้าง ภ.พ.09 ใหม่
+- Request body: PPP09 data (JSON)
+- Response: Created PPP09 object
+
+**PUT /api/legal/ppp09/{ppp09_id}**
+- แก้ไขข้อมูล ภ.พ.09
+- Request body: PPP09 data (JSON)
+- Response: Updated PPP09 object
+
+**DELETE /api/legal/ppp09/{ppp09_id}**
+- ลบ ภ.พ.09 (soft delete)
+- Response: Success message
+
+**POST /api/legal/ppp09/{ppp09_id}/upload-pdf**
+- อัพโหลด PDF เอกสาร ภ.พ.09
+- Request: Multipart form-data with PDF file
+- Response: File path and metadata
+
+**GET /api/legal/ppp09/{ppp09_id}/download-pdf**
+- ดาวน์โหลด PDF เอกสาร ภ.พ.09
+- Response: PDF file (binary)
+
+**DELETE /api/legal/ppp09/{ppp09_id}/delete-pdf**
+- ลบ PDF เอกสาร ภ.พ.09
+- Response: Success message
+
+### Business Logic
+
+**การตรวจสอบหมดอายุ:**
+- Cron job หรือ Cloud Scheduler ทำงานทุกวัน
+- ตรวจสอบ ภ.พ.09 ที่จะหมดอายุใน 30, 60, 90 วัน
+- ส่ง email notification ไปยังทีมกฎหมาย
+
+**การตรวจสอบการชำระภาษี:**
+- แสดง badge/alert สำหรับ ภ.พ.09 ที่ยังไม่ชำระภาษี (unpaid)
+- แสดง badge/alert แดงสำหรับ ภ.พ.09 ที่ค้างชำระ (overdue)
+
+**PDF Storage:**
+- เก็บ PDF ไว้ใน GCS bucket: `gs://{bucket}/legal/ppp09/{branch_id}_{ppp09_number}_{year}.pdf`
+- ตั้งชื่อไฟล์ให้มีความหมายและไม่ซ้ำกัน
+- เก็บ metadata (file_size, upload_time, uploader) ใน BigQuery
 
 ## User Authentication (Google OAuth 2.0)
 
