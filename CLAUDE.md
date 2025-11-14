@@ -217,11 +217,30 @@ CREATE TABLE retail_branches.user_teams (
 );
 ```
 
+#### Table: `audit_logs`
+```sql
+CREATE TABLE retail_branches.audit_logs (
+  log_id STRING NOT NULL,                  -- รหัสบันทึก (UUID)
+  user_id STRING NOT NULL,                 -- ผู้ใช้ที่ทำ action
+  user_email STRING NOT NULL,              -- อีเมลผู้ใช้
+  action_type STRING NOT NULL,             -- ประเภท action (login, create, update, delete, etc.)
+  resource_type STRING,                    -- ประเภททรัพยากร (branch, document, user, permission)
+  resource_id STRING,                      -- รหัสทรัพยากรที่เกี่ยวข้อง
+  action_detail STRING,                    -- รายละเอียด action (JSON format)
+  ip_address STRING,                       -- IP address ของผู้ใช้
+  user_agent STRING,                       -- Browser/Client ที่ใช้
+  status STRING,                           -- สถานะ (success, failed)
+  error_message STRING,                    -- ข้อความ error (ถ้ามี)
+  created_at TIMESTAMP NOT NULL            -- เวลาที่เกิด event
+);
+```
+
 **หมายเหตุ Database Schema:**
 - User 1 คนสามารถมีหลาย records ใน `user_teams` (multi-team membership)
 - `users.user_level` กำหนดสิทธิ์ระดับระบบ (admin สามารถทำทุกอย่าง)
 - `user_teams.role` กำหนดสิทธิ์ในแต่ละทีม (viewer, editor, manager)
 - Admin สามารถจัดการ users และ permissions ผ่านหน้า Admin
+- `audit_logs` เก็บบันทึก activity ทั้งหมดของ user รวมถึง admin
 
 ## Design & UI/UX Guidelines
 
@@ -523,12 +542,151 @@ Admin จะเห็นเมนูเพิ่มเติม:
 
 **Admin Navbar Example:**
 ```
-[Logo] | Dashboard | Users | Permissions | Teams ▼ | [User Avatar ▼]
-                                          |
-                                          ├── New Branch
-                                          ├── Legal
-                                          ├── SRD
-                                          └── SCM
+[Logo] | Dashboard | Users | Permissions | Audit Logs | Teams ▼ | [User Avatar ▼]
+                                                         |
+                                                         ├── New Branch
+                                                         ├── Legal
+                                                         ├── SRD
+                                                         └── SCM
+```
+
+## Audit Logs & Activity Tracking
+
+### Overview
+
+ระบบมีการบันทึก activity ทั้งหมดของผู้ใช้ (รวมถึง Admin) เพื่อติดตามว่า **ใคร ทำอะไร เมื่อไหร่** โดยเก็บไว้ใน `audit_logs` table
+
+### Audit Logs Page (`/admin/audit-logs`)
+
+**สิทธิ์การเข้าถึง:** เฉพาะ Admin เท่านั้น
+
+**ฟีเจอร์:**
+- **ดูบันทึก activity ทั้งหมด**: แสดงตาราง audit logs พร้อม filter และ search
+- **กรองตามผู้ใช้**: เลือกดู activity ของ user คนใดคนหนึ่ง
+- **กรองตาม action type**: login, create, update, delete, permission_change
+- **กรองตาม resource**: branch, document, user, permission
+- **กรองตามช่วงเวลา**: เลือกช่วงวันที่
+- **ค้นหา**: ค้นหาจาก email, resource_id, action_detail
+- **Export**: Export logs เป็น CSV สำหรับการวิเคราะห์
+
+**UI Components:**
+- ตาราง audit logs พร้อม pagination
+- Filter panel (user, action type, resource, date range)
+- Search box
+- ปุ่ม "Export to CSV"
+- Timeline view (optional) สำหรับดู activity แบบ chronological
+
+**ข้อมูลที่แสดง:**
+| Column | Description |
+|--------|-------------|
+| Timestamp | วันเวลาที่เกิด event |
+| User | ชื่อและอีเมลผู้ใช้ |
+| Action | ประเภท action (login, create, update, delete) |
+| Resource | ทรัพยากรที่เกี่ยวข้อง (branch, document, user) |
+| Details | รายละเอียด action (expandable) |
+| IP Address | IP address ของผู้ใช้ |
+| Status | Success / Failed |
+
+### Actions ที่บันทึก
+
+**Authentication Actions:**
+- `login` - ผู้ใช้ login เข้าระบบ
+- `logout` - ผู้ใช้ logout ออกจากระบบ
+- `login_failed` - ความพยายาม login ที่ล้มเหลว
+
+**Branch Actions:**
+- `branch_create` - สร้างข้อมูลสาขาใหม่
+- `branch_update` - แก้ไขข้อมูลสาขา
+- `branch_delete` - ลบข้อมูลสาขา
+- `branch_view` - ดูข้อมูลสาขา (optional - ถ้าต้องการความละเอียดสูง)
+
+**Document Actions:**
+- `document_upload` - อัพโหลดเอกสาร
+- `document_download` - ดาวน์โหลดเอกสาร
+- `document_delete` - ลบเอกสาร
+- `document_update` - แก้ไขข้อมูลเอกสาร
+
+**User Management Actions:**
+- `user_create` - สร้าง user ใหม่
+- `user_update` - แก้ไขข้อมูล user (name, level, status)
+- `user_deactivate` - ปิดการใช้งาน user
+- `user_activate` - เปิดการใช้งาน user
+
+**Permission Management Actions:**
+- `permission_add` - เพิ่มสิทธิ์ให้ user เข้าทีม
+- `permission_update` - แก้ไข role ของ user ในทีม
+- `permission_remove` - ลบสิทธิ์ user ออกจากทีม
+
+### Action Detail Format (JSON)
+
+**ตัวอย่าง action_detail สำหรับแต่ละ action:**
+
+```json
+// branch_update
+{
+  "branch_id": "BR001",
+  "branch_name": "สาขาสยาม",
+  "changes": {
+    "phone": {
+      "old": "02-123-4567",
+      "new": "02-987-6543"
+    },
+    "status": {
+      "old": "opening",
+      "new": "active"
+    }
+  }
+}
+
+// permission_add
+{
+  "target_user_id": "user-456",
+  "target_user_email": "john@example.com",
+  "team_name": "legal",
+  "role": "editor"
+}
+
+// document_upload
+{
+  "document_id": "DOC001",
+  "document_name": "สัญญาเช่า-สาขา001.pdf",
+  "file_size": 2048576,
+  "branch_id": "BR001",
+  "team": "legal"
+}
+```
+
+### Audit Log Retention
+
+**นโยบายการเก็บข้อมูล:**
+- เก็บ audit logs ทั้งหมดใน BigQuery (ไม่มีการลบ)
+- Partition โดย created_at (รายวัน) เพื่อประสิทธิภาพในการ query
+- Clustering โดย user_id และ action_type
+- สามารถ archive logs เก่ากว่า 1 ปี ไปยัง GCS (ถ้าต้องการประหยัดค่าใช้จ่าย)
+
+### Security & Privacy
+
+**การรักษาความปลอดภัย:**
+- ห้าม edit หรือ delete audit logs
+- Append-only (เพิ่มได้อย่างเดียว)
+- เฉพาะ Admin เท่านั้นที่ดู audit logs ได้
+- ไม่เก็บข้อมูล sensitive (เช่น password, tokens) ใน action_detail
+- Encrypt sensitive fields ถ้าจำเป็น
+
+**ตัวอย่างการใช้งาน:**
+```
+Admin ต้องการตรวจสอบว่า:
+1. ใครแก้ไขข้อมูลสาขา BR001 เมื่อวานนี้?
+   → กรองด้วย resource_id = "BR001", action = "branch_update", date = yesterday
+
+2. User john@example.com ทำอะไรบ้างในเดือนนี้?
+   → กรองด้วย user_email = "john@example.com", date range = this month
+
+3. มีใครพยายาม login ไม่สำเร็จบ่อยๆ หรือไม่?
+   → กรองด้วย action = "login_failed", สังเกต pattern
+
+4. ใครเป็นคนเพิ่มสิทธิ์ให้ user นี้?
+   → กรองด้วย action = "permission_add", target_user_id
 ```
 
 ## User Authentication (Google OAuth 2.0)
