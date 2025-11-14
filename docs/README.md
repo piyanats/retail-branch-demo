@@ -19,9 +19,9 @@
 | ทีม | หน้าที่ | ข้อมูลที่เข้าถึง |
 |-----|---------|-----------------|
 | **ทีมสาขาใหม่** | จัดการข้อมูลการเปิดสาขาใหม่ | ข้อมูลสาขาที่กำลังเปิดใหม่, สถานะการเปิดสาขา, timeline |
-| **ทีมกฎหมาย** | จัดการเอกสารทางกฎหมายและข้อมูล ภ.พ.09 | เอกสารสัญญา, ใบอนุญาต, ภ.พ.09 (แบบแจ้งการประเมินภาษีที่ดินและสิ่งปลูกสร้าง), เอกสารกฎหมายของแต่ละสาขา |
-| **ทีม SRD** | จัดการเอกสาร layout | แปลนผัง, layout ร้าน, floor plan ของแต่ละสาขา |
-| **ทีม SCM** | จัดการข้อมูล DC | ข้อมูล Distribution Center ที่รับผิดชอบแต่ละสาขา |
+| **ทีมกฎหมาย** | จัดการเอกสารทางกฎหมาย ภ.พ.09 และ ภ.พ.20 | ภ.พ.09 (จดทะเบียนที่อยู่สาขา), ภ.พ.20 (เอกสารภาษีมูลค่าเพิ่ม), เอกสารสัญญา, ใบอนุญาต |
+| **ทีม SRD** | จัดการข้อมูล Layout สาขา | Assortment Type, Format, วันที่ Renovate, ALC Flag, Halan Flag |
+| **ทีม SCM** | จัดการข้อมูล DC ของสาขา | DC ปัจจุบัน, การเปลี่ยน DC, กำหนดการเปลี่ยน DC ล่วงหน้า |
 
 **หมายเหตุ:**
 - ผู้ใช้ 1 คนสามารถเป็นสมาชิกของหลายทีมได้ (Multi-Team Membership)
@@ -48,7 +48,11 @@
 ### Features
 - **[features/user-management.md](features/user-management.md)** - User Management & Permissions
 - **[features/audit-logs.md](features/audit-logs.md)** - Audit Logs & Activity Tracking
-- **[features/legal-ppp09.md](features/legal-ppp09.md)** - Legal ภ.พ.09 Management
+
+**Team Features:**
+- **[features/legal-ppp09.md](features/legal-ppp09.md)** - Legal Team (ภ.พ.09 & ภ.พ.20 Management)
+- **[features/srd-layout.md](features/srd-layout.md)** - SRD Team (Layout Management)
+- **[features/scm-dc.md](features/scm-dc.md)** - SCM Team (DC Management)
 
 ### Development
 - **[development/setup.md](development/setup.md)** - Local Development Setup

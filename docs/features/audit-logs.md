@@ -12,7 +12,7 @@
 - **ดูบันทึก activity ทั้งหมด**: แสดงตาราง audit logs พร้อม filter และ search
 - **กรองตามผู้ใช้**: เลือกดู activity ของ user คนใดคนหนึ่ง
 - **กรองตาม action type**: login, create, update, delete, permission_change
-- **กรองตาม resource**: branch, document, user, permission, ppp09
+- **กรองตาม resource**: branch, document, user, permission, ppp09, ppp20, srd_layout, scm_dc
 - **กรองตามช่วงเวลา**: เลือกช่วงวันที่
 - **ค้นหา**: ค้นหาจาก email, resource_id, action_detail
 - **Export**: Export logs เป็น CSV สำหรับการวิเคราะห์
@@ -57,13 +57,33 @@
 - `permission_update` - แก้ไข role ของ user ในทีม
 - `permission_remove` - ลบสิทธิ์ user ออกจากทีม
 
-### Legal ภ.พ.09 Management Actions
+### Legal Team - ภ.พ.09 Management Actions
 - `ppp09_create` - สร้างข้อมูล ภ.พ.09 ใหม่
 - `ppp09_update` - แก้ไขข้อมูล ภ.พ.09
 - `ppp09_delete` - ลบข้อมูล ภ.พ.09
-- `ppp09_pdf_upload` - อัพโหลด PDF เอกสาร ภ.พ.09
-- `ppp09_pdf_download` - ดาวน์โหลด PDF เอกสาร ภ.พ.09
-- `ppp09_pdf_delete` - ลบ PDF เอกสาร ภ.พ.09
+- `ppp09_document_upload` - อัพโหลดเอกสาร ภ.พ.09
+- `ppp09_document_download` - ดาวน์โหลดเอกสาร ภ.พ.09
+- `ppp09_document_delete` - ลบเอกสาร ภ.พ.09
+
+### Legal Team - ภ.พ.20 Management Actions
+- `ppp20_create` - สร้างข้อมูล ภ.พ.20 ใหม่
+- `ppp20_update` - แก้ไขข้อมูล ภ.พ.20
+- `ppp20_delete` - ลบข้อมูล ภ.พ.20
+- `ppp20_document_upload` - อัพโหลดเอกสาร ภ.พ.20
+- `ppp20_document_download` - ดาวน์โหลดเอกสาร ภ.พ.20
+- `ppp20_document_delete` - ลบเอกสาร ภ.พ.20
+
+### SRD Team - Layout Management Actions
+- `srd_layout_create` - สร้างข้อมูล Layout ใหม่
+- `srd_layout_update` - แก้ไขข้อมูล Layout
+- `srd_layout_delete` - ลบข้อมูล Layout
+- `srd_layout_renovate` - อัพเดทวันที่ Renovate (event พิเศษ)
+
+### SCM Team - DC Management Actions
+- `scm_dc_change_scheduled` - กำหนดการเปลี่ยน DC
+- `scm_dc_change_completed` - เปลี่ยน DC สำเร็จ (auto)
+- `scm_dc_schedule_updated` - แก้ไขกำหนดการเปลี่ยน DC
+- `scm_dc_schedule_cancelled` - ยกเลิกกำหนดการเปลี่ยน DC
 
 ## Audit Log Retention
 
