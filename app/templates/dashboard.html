@@ -71,7 +71,7 @@
             {% if user.user_level == 'admin' %}
             <!-- Admin sees all teams -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="card hover:shadow-lg transition-shadow cursor-pointer">
+                <a href="/teams/new-branch" class="card hover:shadow-lg transition-shadow cursor-pointer">
                     <div class="flex items-center space-x-3">
                         <div class="p-2 bg-blue-100 rounded-lg">
                             <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,9 +83,9 @@
                             <p class="text-xs text-gray-500">ทีมสาขาใหม่</p>
                         </div>
                     </div>
-                </div>
+                </a>
 
-                <div class="card hover:shadow-lg transition-shadow cursor-pointer">
+                <a href="/teams/legal/ppp09" class="card hover:shadow-lg transition-shadow cursor-pointer">
                     <div class="flex items-center space-x-3">
                         <div class="p-2 bg-purple-100 rounded-lg">
                             <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,12 +94,12 @@
                         </div>
                         <div>
                             <h3 class="font-medium text-gray-900">Legal</h3>
-                            <p class="text-xs text-gray-500">ทีมกฎหมาย</p>
+                            <p class="text-xs text-gray-500">ทีมกฎหมาย - ภ.พ.09</p>
                         </div>
                     </div>
-                </div>
+                </a>
 
-                <div class="card hover:shadow-lg transition-shadow cursor-pointer">
+                <a href="/teams/srd" class="card hover:shadow-lg transition-shadow cursor-pointer">
                     <div class="flex items-center space-x-3">
                         <div class="p-2 bg-orange-100 rounded-lg">
                             <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,12 +108,12 @@
                         </div>
                         <div>
                             <h3 class="font-medium text-gray-900">SRD</h3>
-                            <p class="text-xs text-gray-500">ทีม SRD</p>
+                            <p class="text-xs text-gray-500">ทีม SRD - Layout</p>
                         </div>
                     </div>
-                </div>
+                </a>
 
-                <div class="card hover:shadow-lg transition-shadow cursor-pointer">
+                <a href="/teams/scm" class="card hover:shadow-lg transition-shadow cursor-pointer">
                     <div class="flex items-center space-x-3">
                         <div class="p-2 bg-green-100 rounded-lg">
                             <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,27 +122,105 @@
                         </div>
                         <div>
                             <h3 class="font-medium text-gray-900">SCM</h3>
-                            <p class="text-xs text-gray-500">ทีม SCM</p>
+                            <p class="text-xs text-gray-500">ทีม SCM - DC Docs</p>
                         </div>
                     </div>
+                </a>
+            </div>
+
+            <!-- Admin menu -->
+            <div class="mt-6">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Admin Functions</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <a href="/admin/users" class="card hover:shadow-lg transition-shadow cursor-pointer bg-gray-50">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-gray-200 rounded-lg">
+                                <svg class="h-5 w-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900 text-sm">User Management</h3>
+                                <p class="text-xs text-gray-500">จัดการผู้ใช้และสิทธิ์</p>
+                            </div>
+                        </div>
+                    </a>
                 </div>
             </div>
             {% else %}
             <!-- Regular users see their teams -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {% for team in user.teams %}
-                <div class="card hover:shadow-lg transition-shadow cursor-pointer">
+                {% if 'new_branch' in user.teams %}
+                <a href="/teams/new-branch" class="card hover:shadow-lg transition-shadow cursor-pointer">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="font-medium text-gray-900">{{ team.team_name }}</h3>
-                            <p class="text-xs text-gray-500">{{ team.role }}</p>
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">New Branch</h3>
+                                <p class="text-xs text-gray-500">{{ user.teams['new_branch'] }}</p>
+                            </div>
                         </div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {{ team.role }}
-                        </span>
                     </div>
-                </div>
-                {% endfor %}
+                </a>
+                {% endif %}
+
+                {% if 'legal' in user.teams %}
+                <a href="/teams/legal/ppp09" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-purple-100 rounded-lg">
+                                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">Legal - ภ.พ.09</h3>
+                                <p class="text-xs text-gray-500">{{ user.teams['legal'] }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endif %}
+
+                {% if 'srd' in user.teams %}
+                <a href="/teams/srd" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-orange-100 rounded-lg">
+                                <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">SRD</h3>
+                                <p class="text-xs text-gray-500">{{ user.teams['srd'] }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endif %}
+
+                {% if 'scm' in user.teams %}
+                <a href="/teams/scm" class="card hover:shadow-lg transition-shadow cursor-pointer">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">SCM</h3>
+                                <p class="text-xs text-gray-500">{{ user.teams['scm'] }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -191,22 +269,12 @@
                 </div>
             </div>
         </div>
-
-        <!-- Development notice -->
-        <div class="mt-8 bg-yellow-50 border-l-4 border-yellow-400 p-4">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm text-yellow-700">
-                        <strong>Under Development</strong> - Team features และ data management กำลังพัฒนา (Phase 3-4)
-                    </p>
-                </div>
-            </div>
-        </div>
     </main>
 </div>
+
+<style>
+.card {
+    @apply bg-white rounded-lg shadow p-4;
+}
+</style>
 {% endblock %}

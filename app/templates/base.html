@@ -12,7 +12,9 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50">
-    {% block body %}{% endblock %}
+    {% block body %}
+    {% block content %}{% endblock %}
+    {% endblock %}
 
     <!-- Toast Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50"></div>
@@ -22,8 +24,6 @@
         // Global CSRF token
         window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
     </script>
-    <script src="/static/js/utils/api.js"></script>
-    <script src="/static/js/utils/toast.js"></script>
 
     {% block extra_js %}{% endblock %}
 </body>
