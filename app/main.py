@@ -193,7 +193,10 @@ async def shutdown_event():
     print("=" * 50)
 
 # Include routers
-from app.routes import auth_routes, admin_routes
+from app.routes import auth_routes, admin_routes, branch_routes, document_routes, legal_ppp09_routes
 
 app.include_router(auth_routes.router)
 app.include_router(admin_routes.router)
+app.include_router(branch_routes.router)
+app.include_router(document_routes.router)
+app.include_router(legal_ppp09_routes.router)
