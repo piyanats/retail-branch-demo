@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Legal Team - ภ.พ.09 Management{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">ภ.พ.09 Management</h1>
+        <p class="mt-2 text-sm text-gray-600">จัดการ แบบแจ้งการประเมินภาษีที่ดินและสิ่งปลูกสร้าง (ภ.พ.09)</p>
+    </div>
+
+    <!-- Alerts -->
+    <div id="expiry-alerts" class="mb-6">
+        <!-- Loaded via JavaScript -->
+    </div>
+
+    <!-- Filters and Actions -->
+    <div class="bg-white rounded-lg shadow mb-6">
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <!-- Search -->
+                <div class="md:col-span-2">
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" id="search" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Search by ภ.พ.09 number, owner name, branch ID...">
+                </div>
+
+                <!-- Province Filter -->
+                <div>
+                    <label for="filter-province" class="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                    <select id="filter-province" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="">All Provinces</option>
+                    </select>
+                </div>
+
+                <!-- Payment Status Filter -->
+                <div>
+                    <label for="filter-payment" class="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
+                    <select id="filter-payment" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="">All Status</option>
+                        <option value="paid">Paid</option>
+                        <option value="unpaid">Unpaid</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <div class="flex gap-2">
+                    <button id="btn-filter-expiring" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+                        🔔 Expiring Soon (90 days)
+                    </button>
+                    <button id="btn-clear-filters" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+                        Clear Filters
+                    </button>
+                </div>
+                <button id="btn-add-ppp09" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
+                    + Add ภ.พ.09
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PPP09 Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ภ.พ.09 Number</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Province</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax/Year</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PDF</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ppp09-tbody" class="bg-white divide-y divide-gray-200">
+                    <!-- Loaded via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Showing <span id="page-info-start">0</span> to <span id="page-info-end">0</span> of <span id="page-info-total">0</span> results
+                </div>
+                <div class="flex gap-2" id="pagination-buttons">
+                    <!-- Loaded via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center gap-4">
+            <svg class="animate-spin h-8 w-8 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-gray-700 font-medium">Loading...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit PPP09 Modal -->
+<div id="ppp09-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 my-8">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 id="modal-title" class="text-xl font-bold text-gray-900">Add New ภ.พ.09</h2>
+                <button id="btn-close-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <form id="ppp09-form" class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+            <input type="hidden" id="ppp09-id" name="ppp09_id">
+
+            <!-- Section 1: General Information -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">ข้อมูลทั่วไป</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="branch-id" class="block text-sm font-medium text-gray-700 mb-1">Branch ID *</label>
+                        <input type="text" id="branch-id" name="branch_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="BR001">
+                    </div>
+                    <div>
+                        <label for="ppp09-number" class="block text-sm font-medium text-gray-700 mb-1">เลขที่ ภ.พ.09</label>
+                        <input type="text" id="ppp09-number" name="ppp09_number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="12345/2567">
+                    </div>
+                    <div>
+                        <label for="owner-name" class="block text-sm font-medium text-gray-700 mb-1">ชื่อเจ้าของ/ผู้เสียภาษี</label>
+                        <input type="text" id="owner-name" name="owner_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="ชื่อ-นามสกุล">
+                    </div>
+                    <div>
+                        <label for="issue-date" class="block text-sm font-medium text-gray-700 mb-1">วันที่ออกเอกสาร</label>
+                        <input type="date" id="issue-date" name="issue_date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="expiry-date" class="block text-sm font-medium text-gray-700 mb-1">วันหมดอายุ</label>
+                        <input type="date" id="expiry-date" name="expiry_date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Address -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">ที่อยู่</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="address-number" class="block text-sm font-medium text-gray-700 mb-1">บ้านเลขที่</label>
+                        <input type="text" id="address-number" name="address_number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="123/45">
+                    </div>
+                    <div>
+                        <label for="address-moo" class="block text-sm font-medium text-gray-700 mb-1">หมู่ที่</label>
+                        <input type="text" id="address-moo" name="address_moo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="1">
+                    </div>
+                    <div>
+                        <label for="address-trok" class="block text-sm font-medium text-gray-700 mb-1">ตรอก</label>
+                        <input type="text" id="address-trok" name="address_trok" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="address-soi" class="block text-sm font-medium text-gray-700 mb-1">ซอย</label>
+                        <input type="text" id="address-soi" name="address_soi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="address-road" class="block text-sm font-medium text-gray-700 mb-1">ถนน</label>
+                        <input type="text" id="address-road" name="address_road" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="address-tambon" class="block text-sm font-medium text-gray-700 mb-1">ตำบล/แขวง</label>
+                        <input type="text" id="address-tambon" name="address_tambon" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="address-amphoe" class="block text-sm font-medium text-gray-700 mb-1">อำเภอ/เขต</label>
+                        <input type="text" id="address-amphoe" name="address_amphoe" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="address-province" class="block text-sm font-medium text-gray-700 mb-1">จังหวัด</label>
+                        <input type="text" id="address-province" name="address_province" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="address-postal" class="block text-sm font-medium text-gray-700 mb-1">รหัสไปรษณีย์</label>
+                        <input type="text" id="address-postal" name="address_postal_code" pattern="[0-9]{5}" maxlength="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="10110">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Land Area & Tax -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">เนื้อที่และภาษี</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="land-rai" class="block text-sm font-medium text-gray-700 mb-1">เนื้อที่ (ไร่)</label>
+                        <input type="number" id="land-rai" name="land_area_rai" step="0.01" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0">
+                    </div>
+                    <div>
+                        <label for="land-ngan" class="block text-sm font-medium text-gray-700 mb-1">เนื้อที่ (งาน)</label>
+                        <input type="number" id="land-ngan" name="land_area_ngan" step="0.01" min="0" max="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0">
+                    </div>
+                    <div>
+                        <label for="land-wa" class="block text-sm font-medium text-gray-700 mb-1">เนื้อที่ (ตร.วา)</label>
+                        <input type="number" id="land-wa" name="land_area_wa" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="building-area" class="block text-sm font-medium text-gray-700 mb-1">พื้นที่สิ่งปลูกสร้าง (ตร.ม.)</label>
+                        <input type="number" id="building-area" name="building_area_sqm" step="0.01" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0">
+                    </div>
+                    <div>
+                        <label for="annual-tax" class="block text-sm font-medium text-gray-700 mb-1">ภาษีต่อปี (บาท)</label>
+                        <input type="number" id="annual-tax" name="annual_tax_amount" step="0.01" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0.00">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label for="payment-status" class="block text-sm font-medium text-gray-700 mb-1">สถานะการชำระ</label>
+                        <select id="payment-status" name="payment_status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <option value="">-</option>
+                            <option value="paid">Paid</option>
+                            <option value="unpaid">Unpaid</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Remarks -->
+            <div>
+                <label for="remarks" class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ</label>
+                <textarea id="remarks" name="remarks" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+            </div>
+
+            <div class="flex gap-3 pt-4 border-t border-gray-200">
+                <button type="submit" id="btn-submit" class="flex-1 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
+                    Save ภ.พ.09
+                </button>
+                <button type="button" id="btn-cancel" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- PDF Upload Modal -->
+<div id="pdf-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-gray-900">Upload PDF ภ.พ.09</h2>
+                <button id="btn-close-pdf-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <form id="pdf-form" class="p-6">
+            <input type="hidden" id="pdf-ppp09-id">
+
+            <div class="mb-4">
+                <label for="pdf-file" class="block text-sm font-medium text-gray-700 mb-2">Select PDF File (Max 10MB)</label>
+                <input type="file" id="pdf-file" accept="application/pdf" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <p class="mt-2 text-xs text-gray-500">Maximum file size: 10MB</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
+                    Upload PDF
+                </button>
+                <button type="button" id="btn-cancel-pdf" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/static/js/legal_ppp09.js"></script>
+{% endblock %}

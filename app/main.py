@@ -145,6 +145,136 @@ async def admin_users_page(request: Request):
         }
     )
 
+# Team Pages
+
+@app.get("/teams/new-branch")
+async def new_branch_page(request: Request):
+    """
+    New Branch Team - Branch Management page
+
+    Requires: new_branch team access
+    """
+    from app.middleware.session import get_session_user
+
+    user = get_session_user(request)
+
+    if not user:
+        return RedirectResponse(url="/login")
+
+    # Check team access
+    if user.get('user_level') != 'admin':
+        user_teams = user.get('teams', {})
+        if 'new_branch' not in user_teams:
+            return templates.TemplateResponse(
+                "unauthorized.html",
+                {"request": request, "message": "You need new_branch team access to view this page"}
+            )
+
+    return templates.TemplateResponse(
+        "teams/new_branch.html",
+        {
+            "request": request,
+            "user": user,
+            "csrf_token": secrets.token_urlsafe(32)
+        }
+    )
+
+@app.get("/teams/legal/ppp09")
+async def legal_ppp09_page(request: Request):
+    """
+    Legal Team - ภ.พ.09 Management page
+
+    Requires: legal team access
+    """
+    from app.middleware.session import get_session_user
+
+    user = get_session_user(request)
+
+    if not user:
+        return RedirectResponse(url="/login")
+
+    # Check team access
+    if user.get('user_level') != 'admin':
+        user_teams = user.get('teams', {})
+        if 'legal' not in user_teams:
+            return templates.TemplateResponse(
+                "unauthorized.html",
+                {"request": request, "message": "You need legal team access to view this page"}
+            )
+
+    return templates.TemplateResponse(
+        "teams/legal_ppp09.html",
+        {
+            "request": request,
+            "user": user,
+            "csrf_token": secrets.token_urlsafe(32)
+        }
+    )
+
+@app.get("/teams/srd")
+async def srd_page(request: Request):
+    """
+    SRD Team - Layout & Design Documents page
+
+    Requires: srd team access
+    """
+    from app.middleware.session import get_session_user
+
+    user = get_session_user(request)
+
+    if not user:
+        return RedirectResponse(url="/login")
+
+    # Check team access
+    if user.get('user_level') != 'admin':
+        user_teams = user.get('teams', {})
+        if 'srd' not in user_teams:
+            return templates.TemplateResponse(
+                "unauthorized.html",
+                {"request": request, "message": "You need srd team access to view this page"}
+            )
+
+    return templates.TemplateResponse(
+        "teams/srd.html",
+        {
+            "request": request,
+            "user": user,
+            "csrf_token": secrets.token_urlsafe(32)
+        }
+    )
+
+@app.get("/teams/scm")
+async def scm_page(request: Request):
+    """
+    SCM Team - Distribution Center Documents page
+
+    Requires: scm team access
+    """
+    from app.middleware.session import get_session_user
+
+    user = get_session_user(request)
+
+    if not user:
+        return RedirectResponse(url="/login")
+
+    # Check team access
+    if user.get('user_level') != 'admin':
+        user_teams = user.get('teams', {})
+        if 'scm' not in user_teams:
+            return templates.TemplateResponse(
+                "unauthorized.html",
+                {"request": request, "message": "You need scm team access to view this page"}
+            )
+
+    return templates.TemplateResponse(
+        "teams/scm.html",
+        {
+            "request": request,
+            "user": user,
+            "csrf_token": secrets.token_urlsafe(32)
+        }
+    )
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():

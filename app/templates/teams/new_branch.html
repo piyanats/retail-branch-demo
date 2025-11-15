@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}New Branch Team - Branch Management{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Branch Management</h1>
+        <p class="mt-2 text-sm text-gray-600">Manage retail branch information and opening status</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Branches</p>
+                    <p class="text-2xl font-bold text-gray-900" id="stat-total">-</p>
+                </div>
+                <div class="bg-blue-100 rounded-full p-3">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Active</p>
+                    <p class="text-2xl font-bold text-green-600" id="stat-active">-</p>
+                </div>
+                <div class="bg-green-100 rounded-full p-3">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Opening</p>
+                    <p class="text-2xl font-bold text-orange-600" id="stat-opening">-</p>
+                </div>
+                <div class="bg-orange-100 rounded-full p-3">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Closed</p>
+                    <p class="text-2xl font-bold text-gray-600" id="stat-closed">-</p>
+                </div>
+                <div class="bg-gray-100 rounded-full p-3">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Actions -->
+    <div class="bg-white rounded-lg shadow mb-6">
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <!-- Search -->
+                <div class="md:col-span-2">
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" id="search" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Search by branch ID, name, or address...">
+                </div>
+
+                <!-- Province Filter -->
+                <div>
+                    <label for="filter-province" class="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                    <select id="filter-province" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Provinces</option>
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <label for="filter-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="filter-status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="opening">Opening</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <button id="btn-clear-filters" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+                    Clear Filters
+                </button>
+                <button id="btn-add-branch" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                    + Add Branch
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branches Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Province</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DC Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opening Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="branches-tbody" class="bg-white divide-y divide-gray-200">
+                    <!-- Loaded via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Showing <span id="page-info-start">0</span> to <span id="page-info-end">0</span> of <span id="page-info-total">0</span> results
+                </div>
+                <div class="flex gap-2" id="pagination-buttons">
+                    <!-- Loaded via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center gap-4">
+            <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-gray-700 font-medium">Loading...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Branch Modal -->
+<div id="branch-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 id="modal-title" class="text-xl font-bold text-gray-900">Add New Branch</h2>
+                <button id="btn-close-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <form id="branch-form" class="p-6 space-y-4">
+            <input type="hidden" id="branch-id" name="branch_id_hidden">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="branch-id-input" class="block text-sm font-medium text-gray-700 mb-1">Branch ID *</label>
+                    <input type="text" id="branch-id-input" name="branch_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., BR001">
+                </div>
+
+                <div>
+                    <label for="branch-name" class="block text-sm font-medium text-gray-700 mb-1">Branch Name *</label>
+                    <input type="text" id="branch-name" name="branch_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., สาขาสยาม">
+                </div>
+            </div>
+
+            <div>
+                <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <textarea id="address" name="address" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Full address"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="province" class="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                    <input type="text" id="province" name="province" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Bangkok">
+                </div>
+
+                <div>
+                    <label for="district" class="block text-sm font-medium text-gray-700 mb-1">District</label>
+                    <input type="text" id="district" name="district" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Pathum Wan">
+                </div>
+
+                <div>
+                    <label for="postal-code" class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                    <input type="text" id="postal-code" name="postal_code" pattern="[0-9]{5}" maxlength="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="10330">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input type="tel" id="phone" name="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="02-123-4567">
+                </div>
+
+                <div>
+                    <label for="dc-code" class="block text-sm font-medium text-gray-700 mb-1">DC Code</label>
+                    <input type="text" id="dc-code" name="dc_code" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="DC01">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                    <select id="status" name="status" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="active">Active</option>
+                        <option value="opening">Opening</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="opening-date" class="block text-sm font-medium text-gray-700 mb-1">Opening Date</label>
+                    <input type="date" id="opening-date" name="opening_date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button type="submit" id="btn-submit" class="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                    Save Branch
+                </button>
+                <button type="button" id="btn-cancel" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/static/js/new_branch.js"></script>
+{% endblock %}
