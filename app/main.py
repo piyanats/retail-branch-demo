@@ -103,10 +103,9 @@ async def dashboard(request: Request):
     if not user:
         return RedirectResponse(url="/login")
 
-    # For now, show a simple dashboard
-    # Later, redirect based on user's teams
+    # Show modern Datta Able style dashboard
     return templates.TemplateResponse(
-        "dashboard.html",
+        "dashboard_new.html",
         {
             "request": request,
             "user": user,

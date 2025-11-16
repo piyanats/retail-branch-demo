@@ -9,9 +9,101 @@
     <!-- Tailwind CSS -->
     <link rel="stylesheet" href="/static/css/output.css">
 
+    <!-- Custom Styles -->
+    <style>
+        /* Sidebar Styles */
+        .sidebar {
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-link {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left-color: #4CAFE0;
+        }
+
+        .sidebar-link.active {
+            background-color: rgba(76, 175, 224, 0.2);
+            border-left-color: #4CAFE0;
+        }
+
+        /* Gradient Cards */
+        .gradient-card-blue {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .gradient-card-green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .gradient-card-orange {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .gradient-card-purple {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        /* Stats Card Animation */
+        .stats-card {
+            transition: all 0.3s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Modern Button */
+        .btn-modern {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Breadcrumb */
+        .breadcrumb-modern {
+            background: transparent;
+            padding: 0;
+        }
+
+        /* Card Shadow */
+        .card-modern {
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .card-modern:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Sidebar Toggle */
+        .sidebar-collapsed {
+            width: 70px;
+        }
+
+        .sidebar-collapsed .sidebar-text {
+            display: none;
+        }
+
+        .sidebar-collapsed .sidebar-logo-text {
+            display: none;
+        }
+    </style>
+
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-100">
     {% block body %}
     {% block content %}{% endblock %}
     {% endblock %}
@@ -23,6 +115,12 @@
     <script>
         // Global CSRF token
         window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('sidebar-collapsed');
+        }
     </script>
 
     {% block extra_js %}{% endblock %}

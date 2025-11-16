@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Retail Branch Management System{% endblock %}
+
+{% block body %}
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar w-64 flex-shrink-0 overflow-y-auto transition-all duration-300">
+        <!-- Logo -->
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="h-10 w-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+                <div class="sidebar-logo-text">
+                    <h1 class="text-white font-bold text-lg">Branch MS</h1>
+                    <p class="text-gray-400 text-xs">Management System</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="p-4">
+            <div class="space-y-2">
+                <!-- Dashboard -->
+                <a href="/dashboard" class="sidebar-link active flex items-center px-4 py-3 text-white rounded-lg">
+                    <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span class="sidebar-text ml-3 font-medium">Dashboard</span>
+                </a>
+
+                <!-- Teams Section -->
+                <div class="pt-4 pb-2">
+                    <p class="sidebar-text px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Teams</p>
+                </div>
+
+                {% if user.user_level == 'admin' or 'new_branch' in user.teams %}
+                <a href="/teams/new-branch" class="sidebar-link flex items-center px-4 py-3 text-gray-300 rounded-lg">
+                    <svg class="h-5 w-5 flex-shrink-0 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    <span class="sidebar-text ml-3">New Branch</span>
+                </a>
+                {% endif %}
+
+                {% if user.user_level == 'admin' or 'legal' in user.teams %}
+                <a href="/teams/legal/ppp09" class="sidebar-link flex items-center px-4 py-3 text-gray-300 rounded-lg">
+                    <svg class="h-5 w-5 flex-shrink-0 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="sidebar-text ml-3">Legal - ภ.พ.09</span>
+                </a>
+                {% endif %}
+
+                {% if user.user_level == 'admin' or 'srd' in user.teams %}
+                <a href="/teams/srd" class="sidebar-link flex items-center px-4 py-3 text-gray-300 rounded-lg">
+                    <svg class="h-5 w-5 flex-shrink-0 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="sidebar-text ml-3">SRD - Layouts</span>
+                </a>
+                {% endif %}
+
+                {% if user.user_level == 'admin' or 'scm' in user.teams %}
+                <a href="/teams/scm" class="sidebar-link flex items-center px-4 py-3 text-gray-300 rounded-lg">
+                    <svg class="h-5 w-5 flex-shrink-0 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path>
+                    </svg>
+                    <span class="sidebar-text ml-3">SCM - DC Docs</span>
+                </a>
+                {% endif %}
+
+                <!-- Admin Section -->
+                {% if user.user_level == 'admin' %}
+                <div class="pt-4 pb-2">
+                    <p class="sidebar-text px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Admin</p>
+                </div>
+
+                <a href="/admin/users" class="sidebar-link flex items-center px-4 py-3 text-gray-300 rounded-lg">
+                    <svg class="h-5 w-5 flex-shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <span class="sidebar-text ml-3">User Management</span>
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top Navbar -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center space-x-4">
+                    <!-- Sidebar Toggle -->
+                    <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Breadcrumb -->
+                    <nav class="flex items-center space-x-2 text-sm text-gray-600">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        <span class="font-medium text-gray-800">Dashboard</span>
+                    </nav>
+                </div>
+
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications -->
+                    <button class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        <span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+                    </button>
+
+                    <!-- User Info -->
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right">
+                            <p class="text-sm font-semibold text-gray-700">{{ user.name }}</p>
+                            <p class="text-xs text-gray-500">{{ user.user_level|capitalize }}</p>
+                        </div>
+                        {% if user.picture %}
+                        <img src="{{ user.picture }}" alt="{{ user.name }}" class="h-10 w-10 rounded-full border-2 border-gray-200">
+                        {% else %}
+                        <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center border-2 border-gray-200">
+                            <span class="text-white font-semibold">{{ user.name[0] }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Logout -->
+                    <a href="/auth/logout" class="px-4 py-2 text-sm text-red-600 hover:text-red-800 font-medium">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
+            <!-- Welcome Card -->
+            <div class="mb-6 card-modern bg-white p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Welcome back, {{ user.name }}! 👋</h1>
+                        <p class="text-gray-600 mt-1">Here's what's happening with your branches today</p>
+                    </div>
+                    <div class="hidden md:block">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2942/2942813.png" alt="Welcome" class="h-20 w-20 opacity-75">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Total Branches -->
+                <div class="stats-card card-modern p-6 gradient-card-blue text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white text-opacity-80 text-sm font-medium mb-1">Total Branches</p>
+                            <h3 class="text-3xl font-bold">-</h3>
+                            <p class="text-white text-opacity-70 text-xs mt-2">
+                                <span class="font-semibold">↑ 12%</span> vs last month
+                            </p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-full p-4">
+                            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Branches -->
+                <div class="stats-card card-modern p-6 gradient-card-green text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white text-opacity-80 text-sm font-medium mb-1">Active Branches</p>
+                            <h3 class="text-3xl font-bold">-</h3>
+                            <p class="text-white text-opacity-70 text-xs mt-2">
+                                <span class="font-semibold">↑ 8%</span> operational
+                            </p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-full p-4">
+                            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents -->
+                <div class="stats-card card-modern p-6 gradient-card-orange text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white text-opacity-80 text-sm font-medium mb-1">Documents</p>
+                            <h3 class="text-3xl font-bold">-</h3>
+                            <p class="text-white text-opacity-70 text-xs mt-2">
+                                <span class="font-semibold">24</span> uploaded this week
+                            </p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-full p-4">
+                            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Users -->
+                <div class="stats-card card-modern p-6 gradient-card-purple text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white text-opacity-80 text-sm font-medium mb-1">Active Users</p>
+                            <h3 class="text-3xl font-bold">-</h3>
+                            <p class="text-white text-opacity-70 text-xs mt-2">
+                                <span class="font-semibold">5</span> online now
+                            </p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-full p-4">
+                            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Access -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recent Activity -->
+                <div class="card-modern bg-white p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Recent Activity</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4 pb-4 border-b border-gray-100">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">New branch created</p>
+                                <p class="text-xs text-gray-500">2 hours ago</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4 pb-4 border-b border-gray-100">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                <svg class="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">ภ.พ.09 document uploaded</p>
+                                <p class="text-xs text-gray-500">5 hours ago</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">Branch status updated to Active</p>
+                                <p class="text-xs text-gray-500">1 day ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="card-modern bg-white p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Quick Access</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        {% if user.user_level == 'admin' or 'new_branch' in user.teams %}
+                        <a href="/teams/new-branch" class="p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all">
+                            <div class="text-center">
+                                <div class="h-12 w-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-sm font-medium text-gray-700">Branches</p>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        {% if user.user_level == 'admin' or 'legal' in user.teams %}
+                        <a href="/teams/legal/ppp09" class="p-4 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all">
+                            <div class="text-center">
+                                <div class="h-12 w-12 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-sm font-medium text-gray-700">ภ.พ.09</p>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        {% if user.user_level == 'admin' or 'srd' in user.teams %}
+                        <a href="/teams/srd" class="p-4 border-2 border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all">
+                            <div class="text-center">
+                                <div class="h-12 w-12 mx-auto bg-orange-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-sm font-medium text-gray-700">Layouts</p>
+                            </div>
+                        </a>
+                        {% endif %}
+
+                        {% if user.user_level == 'admin' or 'scm' in user.teams %}
+                        <a href="/teams/scm" class="p-4 border-2 border-green-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-all">
+                            <div class="text-center">
+                                <div class="h-12 w-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-sm font-medium text-gray-700">DC Docs</p>
+                            </div>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
